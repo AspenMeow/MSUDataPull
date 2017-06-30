@@ -1,0 +1,12 @@
+Package: msudatapull
+Title: pull MSU data in standard format
+Version: 0.0.0.9000
+Authors@R: person("Di", "Chen", email = "chendi1020@gmail.com", role = c("aut", "cre"))
+Description: Pull msu data such as first gen.
+Depends: R (>= 3.3.1)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+Imports:
+	RJDBC
+RoxygenNote: 6.0.1
