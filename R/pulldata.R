@@ -181,3 +181,205 @@ firstgen_add <- function(ds='SISFull', maindat){
         dat
         
 }
+
+#' FA_pull is a function to get Pell, FAFSA 1st Gen, and other FA related Info by Pid 
+#' 
+#' @param pidlist a character vectors of Pids
+#' 
+#' @return a data frame with Pid, entry cohort, and FA info
+#' 
+#' @importFrom dplyr filter
+#' @importFrom dplyr mutate
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+FA_pull <- function(pidlist){
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        FA <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                SISFin <- dbGetQuery(MSUDATA, paste0( " select sam1.Pid, 
+	   			sam1.AidYr, 
+                                                      sam1.DepStf,
+                                                      awd1.AidId, 
+                                                      pgm1.TypeAid, 
+                                                      pgm1.ActNr, 
+                                                      awd1.TotPaid, 
+                                                      sam2.Aa, 
+                                                      sam4.Efc, 
+                                                      sam4.SBudget,
+                                                      snp.Ap_Pfedlvl,
+                                                      snp.Ap_Pmedlvl, 
+                                                      case 
+                                                      when snp.Ap_Pfedlvl in ('C') then 'N'
+                                                      when snp.Ap_Pfedlvl in ('') then
+                                                      case
+                                                      when snp.Ap_Pmedlvl in ('C') then 'N' 
+                                                      when snp.Ap_Pmedlvl in ('') then 'X' 
+                                                      when snp.Ap_Pmedlvl in ('H','M') then 'Y'
+                                                      when snp.Ap_Pmedlvl in ('N') then 'O' 
+                                                      else 'W' 
+                                                      end
+                                                      when snp.Ap_Pfedlvl is null then 'Z'  
+                                                      when snp.Ap_Pfedlvl in ('H','M') then 
+                                                      case
+                                                      when snp.Ap_Pmedlvl in ('C') then 'N'
+                                                      when snp.Ap_Pmedlvl in ('') then 'Y'
+                                                      when snp.Ap_Pmedlvl in ('H','M') then 'Y'
+                                                      when snp.Ap_Pmedlvl in ('N') then 'O'
+                                                      else 'W'
+                                                      end
+                                                      when snp.Ap_Pfedlvl in ('N') then 
+                                                      case
+                                                      when snp.Ap_Pmedlvl in ('C') then 'N'
+                                                      when snp.Ap_Pmedlvl in ('') then 'O'
+                                                      when snp.Ap_Pmedlvl in ('H','M') then 'O'
+                                                      when snp.Ap_Pmedlvl in ('N') then 'O'
+                                                      else 'W'
+                                                      end
+                                                      else 'W'
+                                                      end as First_Gen,
+                                                      case
+                                                      when snp.Ap_Pfedlvl is null and snp.Ap_Pmedlvl = '' then 'F'
+                                                      when snp.Ap_Pfedlvl = '' and snp.Ap_Pmedlvl is null then 'M'
+                                                      when snp.Ap_Pfedlvl is null and snp.Ap_Pmedlvl is null then 'B'
+                                                      when snp.Ap_Pfedlvl = '' and snp.Ap_Pmedlvl = '' then 'N'
+                                                      else ''
+                                                      end as First_Gen_Null_Test
+                                                      from  SISFin.dbo.SAMSAM1 sam1 
+                                                      left join SISFin.dbo.SAMAWD1 awd1 
+                                                      on  sam1.Pid=awd1.Pid and sam1.AidYr=awd1.AidYr
+                                                      left join SISFin.dbo.SAMPGM1 pgm1
+                                                      on awd1.AidId=pgm1.AidId and pgm1.AidYr=awd1.AidYr
+                                                      left join SISFin.dbo.SAMSAM2 sam2
+                                                      on awd1.Pid = sam2.Pid and awd1.AidYr = sam2.AidYr 
+                                                      left join SISFin.dbo.SAMSAM4 sam4
+                                                      on awd1.Pid=sam4.Pid and awd1.AidYr=sam4.AidYr
+                                                      left join SISFin.dbo.SAMBIO1 bio1 
+                                                      on awd1.Pid=bio1.Pid
+                                                      left join SISFin.dbo.SAMSNP snp
+                                                      on bio1.Sid=snp.Ap_Sid and snp.Ap_AidYr=awd1.AidYr
+                                                      where sam1.Pid in (", pidchar,")", sep=""
+                                                      
+                ))
+                SamFrzn <- dbGetQuery(MSUDATA, paste0( " select sam1.Pid, 
+                                                       sam1.AidYr,
+                                                       sam1.DepStf, 
+                                                       awd1.AidId, 
+                                                       pgm1.TypeAid, 
+                                                       pgm1.ActNr, 
+                                                       awd1.TotPaid, 
+                                                       sam2.Aa, 
+                                                       sam4.Efc, 
+                                                       sam4.SBudget,
+                                                       snp.Ap_Pfedlvl,
+                                                       snp.Ap_Pmedlvl,
+                                                       case 
+                                                       when snp.Ap_Pfedlvl in ('C') then 'N'
+                                                       when snp.Ap_Pfedlvl in ('') then
+                                                       case
+                                                       when snp.Ap_Pmedlvl in ('C') then 'N' 
+                                                       when snp.Ap_Pmedlvl in ('') then 'X' 
+                                                       when snp.Ap_Pmedlvl in ('H','M') then 'Y' 
+                                                       when snp.Ap_Pmedlvl in ('N') then 'O'
+                                                       else 'W' 
+                                                       end
+                                                       when snp.Ap_Pfedlvl is null then 'Z'  
+                                                       when snp.Ap_Pfedlvl in ('H','M') then 
+                                                       case
+                                                       when snp.Ap_Pmedlvl in ('C') then 'N'
+                                                       when snp.Ap_Pmedlvl in ('') then 'Y'
+                                                       when snp.Ap_Pmedlvl in ('H','M') then 'Y'
+                                                       when snp.Ap_Pmedlvl in ('N') then 'O'
+                                                       else 'W'
+                                                       end
+                                                       when snp.Ap_Pfedlvl in ('N') then 
+                                                       case
+                                                       when snp.Ap_Pmedlvl in ('C') then 'N'
+                                                       when snp.Ap_Pmedlvl in ('') then 'O'
+                                                       when snp.Ap_Pmedlvl in ('H','M') then 'O'
+                                                       when snp.Ap_Pmedlvl in ('N') then 'O'
+                                                       else 'W'
+                                                       end
+                                                       else 'W'
+                                                       end as First_Gen,
+                                                       case
+                                                       when snp.Ap_Pfedlvl is null and snp.Ap_Pmedlvl = '' then 'F'
+                                                       when snp.Ap_Pfedlvl = '' and snp.Ap_Pmedlvl is null then 'M'
+                                                       when snp.Ap_Pfedlvl is null and snp.Ap_Pmedlvl is null then 'B'
+                                                       when snp.Ap_Pfedlvl = '' and snp.Ap_Pmedlvl = '' then 'N'
+                                                       else ''
+                                                       end as First_Gen_Null_Test
+                                                       from  SAMFrzn.dbo.SAMSAM1_Frzn sam1 
+                                                       left join SAMFrzn.dbo.SAMAWD1_Frzn awd1 
+                                                       on  sam1.Pid=awd1.Pid and sam1.AidYr=awd1.AidYr
+                                                       left join SAMFrzn.dbo.SAMPGM1_Frzn pgm1
+                                                       on awd1.AidId=pgm1.AidId and pgm1.AidYr=awd1.AidYr
+                                                       left join SAMFrzn.dbo.SAMSAM2_Frzn sam2
+                                                       on awd1.Pid = sam2.Pid and awd1.AidYr = sam2.AidYr 
+                                                       left join SAMFrzn.dbo.SAMSAM4_Frzn sam4
+                                                       on awd1.Pid=sam4.Pid and awd1.AidYr=sam4.AidYr
+                                                       left join SISFin.dbo.SAMBIO1 bio1 
+                                                       on awd1.Pid=bio1.Pid
+                                                       left join SAMFrzn.dbo.SAMSNP_Frzn snp
+                                                       on bio1.Sid=snp.Ap_Sid and snp.Ap_AidYr=awd1.AidYr
+                                                       where sam1.Pid in (", pidchar,")", sep=""
+                                                       
+                ))
+                FA1 <- rbind(SISFin, SamFrzn)
+                FA <- rbind(FA, FA1)
+        }
+        
+        #pidchar<-paste(shQuote(pidlist, type="csh"), collapse=", ")
+        
+        FA <- FA  %>%filter(! is.na(DepStf) & DepStf != ' ' )%>% mutate(Budget= ifelse(! is.na(Aa), SBudget, NA),
+                            EFC= ifelse( ! is.na(Aa), Efc, NA ),
+                            Need= ifelse(is.na(Aa), NA, ifelse(SBudget-Efc<0, 0,SBudget-Efc ) ),
+                            Pell= ifelse(TypeAid=='E', TotPaid, 0),
+                            SEOG= ifelse(grepl('^SEOG', AidId) | grepl('^TSEG', AidId) | grepl('^USEG', AidId) | grepl('^YSEG', AidId), TotPaid,0 ),
+                            MSU_General_Fund_Grants= ifelse(TypeAid %in% c('G','F','S','P') & grepl('^11', ActNr), TotPaid,0 ),
+                            Other_Grants= ifelse(TypeAid %in% c('G','F','S','P') & ! grepl('^11', ActNr) & 
+                                                        ! grepl('^SEOG', AidId) & ! grepl('^TSEG', AidId) &
+                                                         ! grepl('^USEG', AidId) & ! grepl('^YSEG', AidId), TotPaid,0 ),
+                            Sub_Stafford= ifelse(TypeAid %in% c('B','X'), TotPaid,0),
+                            Unsub_Stafford= ifelse(TypeAid %in% c('C','H','Y','1'), TotPaid,0),
+                            Perkins= ifelse(AidId %in% c('PERK','PERM','UPEK','YPEK','UPEM','YPEM'), TotPaid,0),
+                            Parent_PLUS= ifelse(TypeAid %in% c('D','Z'), TotPaid,0),
+                            Other_Student_Loans= ifelse(TypeAid %in% c('L','I','3') & ! AidId %in% c('PERK','PERM','UPEK','YPEK','UPEM','YPEM'), TotPaid,0 ),
+                            Work_Study=ifelse(TypeAid=='W', TotPaid,0)) %>%
+                 group_by(Pid, AidYr, Aa, EFC, Budget, Need,First_Gen, Ap_Pfedlvl, Ap_Pmedlvl ) %>% 
+                summarise(Pell= sum(Pell), SEOG= sum(SEOG),MSU_General_Fund_Grants=sum(MSU_General_Fund_Grants),
+                          Other_Grants=sum(Other_Grants),Sub_Stafford=sum(Sub_Stafford),  Unsub_Stafford=sum(Unsub_Stafford),
+                          Perkins=sum(Perkins), Parent_PLUS=sum(Parent_PLUS),Other_Student_Loans=sum(Other_Student_Loans),
+                          Work_Study=sum(Work_Study)) %>%
+                mutate(Pell_f= ifelse(Pell>0, 'Y','N'),
+                       SEOG_f= ifelse(SEOG>0, 'Y','N'),
+                       Total_FinAid= Pell+SEOG+MSU_General_Fund_Grants+Other_Grants+Sub_Stafford+Unsub_Stafford+Perkins+
+                               Parent_PLUS+Other_Student_Loans+Work_Study,
+                       Need_Based_FinAid=Pell+SEOG+MSU_General_Fund_Grants+Other_Grants+Sub_Stafford+Perkins+Work_Study,
+                       Need_Based_FinAid_f= ifelse((Pell+SEOG+MSU_General_Fund_Grants+Other_Grants+Sub_Stafford+Perkins+Work_Study) > 0, 'Y','N'),
+                       Need_Met_wFA= ifelse(Need<=0, 'N', ifelse((Pell+SEOG+MSU_General_Fund_Grants+Other_Grants+Sub_Stafford+
+                                                                          Unsub_Stafford+Perkins+Parent_PLUS+Other_Student_Loans+Work_Study)>= Need, 'Y','N')),
+                       Need_Met_wNBFA= ifelse(Need<=0, 'N', ifelse((Pell+SEOG+MSU_General_Fund_Grants+Other_Grants+Sub_Stafford+Perkins+
+                                                                            Work_Study)>= Need,'Y','N')))
+        
+        pidtb <- cohort(pidlist = pidlist)
+        #within 1st Aidyr
+        pidtb1st <- merge(pidtb, FA, by=c('Pid','AidYr'), all.x = T)
+        names(pidtb1st)[! names(pidtb1st) %in% c('Pid','COHORT','AidYr','ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code')] <-
+                paste0(names(pidtb1st)[! names(pidtb1st) %in% c('Pid','COHORT','AidYr','ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code')], '_1st', sep="")
+        
+        #any year
+        pidtb <- merge(pidtb, FA, by='Pid')
+        pidtb <- pidtb %>% mutate(Pell_any= ifelse(is.na(Pell_f),'N', ifelse(AidYr.x<= AidYr.y & Pell_f=='Y','Y','N' )))
+        
+        pidtb <- pidtb %>% group_by(Pid) %>% summarise(Pell_Any_Year= max(Pell_any, na.rm=T))
+        pidtb1st <- merge(pidtb1st, pidtb, by='Pid', all.x = T)
+        pidtb1st %>% mutate(Pell_1st_Yr= ifelse(is.na(Pell_f_1st),'N',Pell_f_1st),
+                                        Pell_Any_Year= ifelse(is.na(Pell_Any_Year),'U', Pell_Any_Year),
+                            First_Gen_FA_1st_Yr= ifelse(is.na(First_Gen_1st) | First_Gen_1st %in% c('X','Z'), 'U', First_Gen_1st))
+}

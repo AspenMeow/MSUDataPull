@@ -8,5 +8,7 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 Imports:
-	RJDBC
+    RJDBC,
+    dplyr,
+    magrittr
 RoxygenNote: 6.0.1
