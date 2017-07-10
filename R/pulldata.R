@@ -383,3 +383,36 @@ FA_pull <- function(pidlist){
                                         Pell_Any_Year= ifelse(is.na(Pell_Any_Year),'U', Pell_Any_Year),
                             First_Gen_FA_1st_Yr= ifelse(is.na(First_Gen_1st) | First_Gen_1st %in% c('X','Z'), 'U', First_Gen_1st))
 }
+
+#' gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids provided
+#' 
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param pidlist A character vector of Pids
+#' 
+#' @return A data frame with Pids, Gender, Ethnicity and Ctzn Code
+#' 
+#' @export
+gndr_race_pull <- function(ds='SISFull', pidlist){
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        dat <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                dat1 <- dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,
+                                                    (case when p.Ctzn_Code = 'NOTC' then 'International' 
+                                                          when e.Ipeds_Flag in ('10','11','6') then 'Asian/Hawaii/PI'
+                                                        else i.Short_Desc end) as Ethnicity
+                                                    from ", ds,".dbo.SISPRSN p 
+                                                    left join ",ds,".dbo.SISPETHN e 
+                                                    on p.Pid=e.Pid 
+                                                    left join SISInfo.dbo.IPEDS i 
+                                                    on e.Ipeds_Flag=i.IPEDS_Flag
+                                                    where p.Pid in (
+                                                    ", pidchar,")", sep=""
+                                                    
+                                                    ))
+                dat <- rbind(dat, dat1)
+        }
+        dat
+}
