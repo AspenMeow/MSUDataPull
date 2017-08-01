@@ -10,5 +10,6 @@ LazyData: true
 Imports:
     RJDBC,
     dplyr,
-    magrittr
+    magrittr,
+	reshape2
 RoxygenNote: 6.0.1

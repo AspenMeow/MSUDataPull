@@ -153,6 +153,45 @@ firstgen_pull <- function(ds='SISFull', pidlist){
       
 }
 
+#' honor_pull is a function to return students with the honor or academic scholar status by term
+#' 
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param pidlist a character vector to input the population interested identifying by Pid
+#' 
+#' @return this function returns a dataframe with only honor or academic scholar students by term
+#' 
+#' @importFrom RJDBC dbGetQuery
+#' @importFrom reshape2 dcast
+#' 
+#' @examples 
+#' \dontrun{honor_pull(ds='SISFull', pidlist=PAG$PID)}
+#' 
+#' @export
+honor_pull <- function(ds='SISFull', pidlist){
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        dat1 <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid , Major_Code, Term_Code, Term_Seq_Id
+                                  from " , ds,".dbo.SISPMJR
+                                   where Pid in (", pidchar, ") and 
+                                          student_level_code='UN' and Major_Code in ('HONR', 'SCLR')  ", sep="")
+                                          
+                )
+                
+                dat1 <- rbind(dat1, dat)
+                
+        }
+        if (nrow(dat1)>1){
+                reshape2::dcast(dat1, Pid + Term_Code+ Term_Seq_Id ~ Major_Code, n_distinct, value.var = 'Pid')
+        }
+        else{
+                warning("no honors")
+        }
+}
+
 
 #' firstgen_add is a function to add students with the first generation status to the dataframe provided
 #' 
