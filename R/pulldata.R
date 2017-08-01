@@ -192,6 +192,50 @@ honor_pull <- function(ds='SISFull', pidlist){
         }
 }
 
+#' mjrclass_pull is a function to return student term info on class code and the primary major
+#' 
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param pidlist a character vector to input the population interested identifying by Pid
+#' 
+#' @return this function returns a dataframe with only honor or academic scholar students by term
+#' 
+#' @importFrom RJDBC dbGetQuery
+#' 
+#' @examples 
+#' \dontrun{mjrclass_pull(ds='SISFull', pidlist=PAG$PID)}
+#' 
+#' @export
+mjrclass_pull <- function(ds='SISFull', pidlist){
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        dat1 <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid,  s.Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
+                                                              m.Short_Desc as Mjr_Short_Desc,
+                                        m.Long_Desc as Mjr_Long_Desc, d.Short_Name as Dept_Short_Name, d.Full_Name as Dept_Full_Name,
+                                 c.Short_Name as Coll_Short_Name, c.Full_Name as Coll_Full_Name
+                                                           from SISFull.dbo.SISPLVT s
+                                                           inner join SISInfo.dbo.MAJORMNT m
+                                                           on s.Primary_Major_Code=m.Major_Code
+                                                           inner join SISInfo.dbo.DEPT d 
+                                                           on m.Dept_Code=d.Dept_Code and m.Coll_Code=d.Coll_Code
+                                                           inner join SISInfo.dbo.COLLEGE c 
+                                                           on c.Coll_Code=m.Coll_Code
+                                                           where s.Pid in (", pidchar, ")  and s.Student_Level_Code='UN' and s.Primary_Lvl_Flag='Y' and 
+                                                           s.System_Rgstn_Status in ('C','R','E','W')
+                                                           ")
+                                          
+                )
+                
+                dat1 <- rbind(dat1, dat)
+                
+        }
+        dat1
+}
+
+
 
 #' firstgen_add is a function to add students with the first generation status to the dataframe provided
 #' 
