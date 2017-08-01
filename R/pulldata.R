@@ -213,7 +213,7 @@ mjrclass_pull <- function(ds='SISFull', pidlist){
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
                 dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid,  s.Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
-                                                              m.Short_Desc as Mjr_Short_Desc,
+                                                              m.Short_Desc as Mjr_Short_Desc, m.Coll_Code, m.Dept_Code,
                                         m.Long_Desc as Mjr_Long_Desc, d.Short_Name as Dept_Short_Name, d.Full_Name as Dept_Full_Name,
                                  c.Short_Name as Coll_Short_Name, c.Full_Name as Coll_Full_Name
                                                            from SISFull.dbo.SISPLVT s
