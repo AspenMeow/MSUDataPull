@@ -120,9 +120,25 @@ $(document).ready(function () {
 </div>
 
 
-<div id="github-documents" class="section level2">
-<h2>GitHub Documents</h2>
-<p>msudatapull is a collection of functions that allows to connect to the data source to pull things like first gen.</p>
+<div id="msudatapull-package-documents" class="section level3">
+<h3>msudatapull package Documents</h3>
+<p>msudatapull is a collection of functions that allows to connect to the various data tables in MSUData. The functions are designed to allow users to pass a list of pids or a dataframe to get back the values of the derived fields such as finanical aid, first gen, etc.</p>
+<div id="install-package" class="section level4">
+<h4>Install Package</h4>
+<pre class="r"><code>devtools::install_github(&quot;chendi1020/msudatapull&quot;)</code></pre>
+</div>
+<div id="load-package-to-the-enviroment" class="section level4">
+<h4>Load Package to the enviroment</h4>
+<pre class="r"><code>library(msudatapull)</code></pre>
+</div>
+<div id="check-the-function-documentation" class="section level4">
+<h4>Check the function documentation</h4>
+<pre class="r"><code>?msudatacon</code></pre>
+</div>
+<div id="in-order-to-connect-to-msudata-the-msudatacon-function-always-needs-to-be-called-first.-the-connection-is-done-by-jdbc-installed-in-following-directory" class="section level4">
+<h4>In order to connect to MSUDATA, the msudatacon function always needs to be called first. The connection is done by JDBC installed in following directory</h4>
+<pre class="r"><code>drv &lt;- RJDBC::JDBC(&quot;com.microsoft.sqlserver.jdbc.SQLServerDriver&quot;,&quot;S:/Utilities/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar&quot;)</code></pre>
+</div>
 </div>
 
 

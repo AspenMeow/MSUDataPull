@@ -24,68 +24,33 @@ msudatacon <- function(userid, password){
 cohort <- function(ds='SISFull', pidlist){
         #hegis cohort including summer starts for UNFRST for UNTRANS for old students the problem has not been fixed in SISFrzn prior to 1144
         ls <- length(pidlist)
-        if (ls <=1000) {
-                pidchar<-paste(shQuote(pidlist, type="csh"), collapse=", ")
-                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( " select a.Pid, a.Term_Seq_Id as Entry_Term_Seq_Id, a.Term_Code as Entry_Term_Code, substring(a.Term_Code,1,1) as Trm, 
-                                                                substring(a.Term_Seq_Id,2,2) as ch,
-                                                                (case when  c.System_Rgstn_Status in ('R','C','E','W') then 'Y' else 'N' end ) as SuTrm
-                                
-                                                             from ",ds,".dbo.SISPLVT as a 
-                                                             inner join (
-
-                                                                select distinct Pid, min(Term_Seq_Id) as minterm
-                                                                from " , ds,".dbo.SISPLVT
-                                                                 where Pid in (", pidchar, ") and 
-                                                                 Student_Level_Code='UN' 
-                                                                and Primary_Lvl_Flag='Y' 
-                                                                and System_Rgstn_Status in ('R','C','E','W')
-                                                                group by Pid
-                                                           
-                                                           ", ") as b 
-                                                           on a.Pid=b.Pid and a.Term_Seq_Id=b.minterm
-                                                           left join ",ds,".dbo.SISPLVT as c
-                                                           on a.Pid=c.Pid and a.Term_Seq_Id=c.Term_Seq_Id-2 and a.Student_Level_Code=c.Student_Level_Code
-                                                             and a.Primary_Lvl_Flag=c.Primary_Lvl_Flag
-                                                           where a.Student_Level_Code='UN' 
-                                                                and a.Primary_Lvl_Flag='Y' 
-                                                           and a.System_Rgstn_Status in ('R','C','E','W') "  ,sep="")
-                                          
-                )
-                dat$COHORT<- ifelse(as.numeric( dat$ch) >=68, 1900+ as.numeric( dat$ch), 2000+as.numeric( dat$ch) )
-                dat$ENTRANT_SUMMER_FALL <- ifelse(dat$Trm == 'F' | (dat$Trm=='U' & dat$SuTrm=='Y'), 'Y', 'N')
-                dat$AidYr <- ifelse(dat$Trm=='U', dat$COHORT, dat$COHORT+1)
-                dat[,c('Pid','COHORT', 'ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','AidYr')]
-                
-        }
         
-        else {
+        #else {
                 lsg <- ceiling( ls/1000)
                 pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
                 dat1 <- data.frame()
                 for (i in seq(lsg)){
                         pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( " select a.Pid, a.Term_Seq_Id as Entry_Term_Seq_Id, a.Term_Code as Entry_Term_Code ,substring(a.Term_Code,1,1) as Trm, 
+                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( " select a.Pid, a.Student_Level_Code,a.Term_Seq_Id as Entry_Term_Seq_Id, a.Term_Code as Entry_Term_Code ,substring(a.Term_Code,1,1) as Trm, 
                                                                 substring(a.Term_Seq_Id,2,2) as ch,
                                                                 (case when  c.System_Rgstn_Status in ('R','C','E','W') then 'Y' else 'N' end ) as SuTrm
                                 
                                                              from ",ds,".dbo.SISPLVT as a 
                                                              inner join (
 
-                                                                select distinct Pid, min(Term_Seq_Id) as minterm
+                                                                select distinct Pid,Student_Level_Code, min(Term_Seq_Id) as minterm
                                                                 from " , ds,".dbo.SISPLVT
-                                                                 where Pid in (", pidchar, ") and 
-                                                                 Student_Level_Code='UN' 
+                                                                 where Pid in (", pidchar, ") 
                                                                 and Primary_Lvl_Flag='Y' 
                                                                 and System_Rgstn_Status in ('R','C','E','W')
-                                                                group by Pid
+                                                                group by Pid,Student_Level_Code
                                                            
                                                            ", ") as b 
-                                                           on a.Pid=b.Pid and a.Term_Seq_Id=b.minterm
+                                                           on a.Pid=b.Pid and a.Term_Seq_Id=b.minterm and a.Student_Level_Code=b.Student_Level_Code
                                                            left join ",ds,".dbo.SISPLVT as c
                                                            on a.Pid=c.Pid and a.Term_Seq_Id=c.Term_Seq_Id-2 and a.Student_Level_Code=c.Student_Level_Code
                                                              and a.Primary_Lvl_Flag=c.Primary_Lvl_Flag
-                                                           where a.Student_Level_Code='UN' 
-                                                                and a.Primary_Lvl_Flag='Y' 
+                                                           where  a.Primary_Lvl_Flag='Y' 
                                                            and a.System_Rgstn_Status in ('R','C','E','W') "  ,sep="")
                                                   
                         )
@@ -95,12 +60,12 @@ cohort <- function(ds='SISFull', pidlist){
                 dat1$COHORT<- ifelse(as.numeric( dat1$ch) >=68, 1900+ as.numeric( dat1$ch), 2000+as.numeric( dat1$ch) )
                 dat1$ENTRANT_SUMMER_FALL <- ifelse(dat1$Trm == 'F' | (dat1$Trm=='U' & dat1$SuTrm=='Y'), 'Y', 'N')
                 dat1$AidYr <- ifelse(dat1$Trm=='U', dat1$COHORT, dat1$COHORT+1)
-                dat1[,c('Pid','COHORT', 'ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','AidYr')]
-        }
+                dat1[,c('Pid','COHORT', 'ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','AidYr','Student_Level_Code')]
+        #}
 }
 
 
-#' firstgen_pull is a function to return students with the first generation status
+#' firstgen_pull is a function to return students with the first generation status.first_gen is available after 2008 for only undergraduates
 #' 
 #' @param ds A character string to indicate the SIS source : SISFull or SISInfo
 #' @param pidlist a character vector to input the population interested identifying by Pid
@@ -116,30 +81,20 @@ cohort <- function(ds='SISFull', pidlist){
 firstgen_pull <- function(ds='SISFull', pidlist){
         #convert character vector to the comma separated string
         ls <- length(pidlist)
-        if (ls <=1000) {
-                pidchar<-paste(shQuote(pidlist, type="csh"), collapse=", ")
-                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid, 'FGEN' as FGEN
-                                  from " , ds,".dbo.sisaprs
-                                   where Pid in (", pidchar, ") and 
-                                         (Spcl_Qual_Code_1='FGEN' OR Spcl_Qual_Code_2='FGEN' OR Spcl_Qual_Code_3='FGEN' OR 
-				Spcl_Qual_Code_4='FGEN' OR Spcl_Qual_Code_5='FGEN' OR Spcl_Qual_Code_6='FGEN' OR Spcl_Qual_Code_7='FGEN' OR Spcl_Qual_Code_8='FGEN' OR 
-				Spcl_Qual_Code_9='FGEN' OR Spcl_Qual_Code_10='FGEN') ", sep="")
-                                   
-                )
-                dat     
-        }
-        else{
+        
+        #else{
                 lsg <- ceiling( ls/1000)
                 pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
                 dat1 <- data.frame()
                 for (i in seq(lsg)){
                         pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid, 'FGEN' as FGEN
-                                  from " , ds,".dbo.sisaprs
-                                   where Pid in (", pidchar, ") and 
-                                         (Spcl_Qual_Code_1='FGEN' OR Spcl_Qual_Code_2='FGEN' OR Spcl_Qual_Code_3='FGEN' OR 
+                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid,
+                                (case when Spcl_Qual_Code_1='FGEN' OR Spcl_Qual_Code_2='FGEN' OR Spcl_Qual_Code_3='FGEN' OR 
 				Spcl_Qual_Code_4='FGEN' OR Spcl_Qual_Code_5='FGEN' OR Spcl_Qual_Code_6='FGEN' OR Spcl_Qual_Code_7='FGEN' OR Spcl_Qual_Code_8='FGEN' OR 
-				Spcl_Qual_Code_9='FGEN' OR Spcl_Qual_Code_10='FGEN') ", sep="")
+				Spcl_Qual_Code_9='FGEN' OR Spcl_Qual_Code_10='FGEN' then 'Y' else 'N' end ) as FGEN
+                                  from " , ds,".dbo.sisaprs
+                                   where Pid in (", pidchar, ") 
+                                         ", sep="")
                                            
                        )
                         
@@ -147,8 +102,13 @@ firstgen_pull <- function(ds='SISFull', pidlist){
                         dat1 <- rbind(dat1, dat)
                         
                 }
+                #cohortds <- cohort(pidlist=dat1)
+                dat1 <- merge(dat1,  cohort(pidlist=pidlist)[,c('Pid','COHORT','Student_Level_Code')], by='Pid')
+                #dat1[dat1$COHORT>=2008, c('Pid','FGEN')]
+                dat1$First_Gen <- ifelse(dat1$COHORT>=2008 & dat1$FGEN=='Y', 'Y','N')
                 dat1
-        }
+                
+        #}
         
       
 }
@@ -185,10 +145,11 @@ honor_pull <- function(ds='SISFull', pidlist){
                 
         }
         if (nrow(dat1)>1){
-                reshape2::dcast(dat1, Pid + Term_Code+ Term_Seq_Id ~ Major_Code, n_distinct, value.var = 'Pid')
+              merge(data.frame(Pid=pidlist),  reshape2::dcast(dat1, Pid + Term_Code+ Term_Seq_Id ~ Major_Code, n_distinct, value.var = 'Pid'),
+                    by='Pid', all.x=T)
         }
         else{
-                warning("no honors")
+                warning("no honors from the list provided")
         }
 }
 
@@ -212,7 +173,7 @@ mjrclass_pull <- function(ds='SISFull', pidlist){
         dat1 <- data.frame()
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid,  s.Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
+                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid, s.Student_Level_Code, s.Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
                                                               m.Short_Desc as Mjr_Short_Desc, m.Coll_Code, m.Dept_Code,
                                         m.Long_Desc as Mjr_Long_Desc, d.Short_Name as Dept_Short_Name, d.Full_Name as Dept_Full_Name,
                                  c.Short_Name as Coll_Short_Name, c.Full_Name as Coll_Full_Name
@@ -223,7 +184,7 @@ mjrclass_pull <- function(ds='SISFull', pidlist){
                                                            on m.Dept_Code=d.Dept_Code and m.Coll_Code=d.Coll_Code
                                                            inner join SISInfo.dbo.COLLEGE c 
                                                            on c.Coll_Code=m.Coll_Code
-                                                           where s.Pid in (", pidchar, ")  and s.Student_Level_Code='UN' and s.Primary_Lvl_Flag='Y' and 
+                                                           where s.Pid in (", pidchar, ")  and  s.Primary_Lvl_Flag='Y' and 
                                                            s.System_Rgstn_Status in ('C','R','E','W')
                                                            ")
                                           
@@ -462,7 +423,7 @@ FA_pull <- function(pidlist){
         
         pidtb <- pidtb %>% group_by(Pid) %>% summarise(Pell_Any_Year= max(Pell_any, na.rm=T))
         pidtb1st <- merge(pidtb1st, pidtb, by='Pid', all.x = T)
-        pidtb1st %>% mutate(Pell_1st_Yr= ifelse(is.na(Pell_f_1st),'N',Pell_f_1st),
+        pidtb1st %>% mutate(Pell_1st_Yr= ifelse(is.na(Pell_f_1st),'U',Pell_f_1st),
                                         Pell_Any_Year= ifelse(is.na(Pell_Any_Year),'U', Pell_Any_Year),
                             First_Gen_FA_1st_Yr= ifelse(is.na(First_Gen_1st) | First_Gen_1st %in% c('X','Z'), 'U', First_Gen_1st))
 }

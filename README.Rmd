@@ -6,7 +6,30 @@ title: "README"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## GitHub Documents
+### msudatapull package Documents
 
-msudatapull is a collection of functions that allows to connect to the data source to pull things like first gen.
+msudatapull is a collection of functions that allows to connect to the various data tables in MSUData. The functions are designed to allow users to pass a list of pids or a dataframe to get back the values of the derived fields such as finanical aid, first gen, etc.
+
+
+#### Install Package
+
+```{r, results='hide', eval=FALSE}
+devtools::install_github("chendi1020/msudatapull")
+```
+
+#### Load Package to the enviroment
+```{r, results='hide', eval=FALSE}
+library(msudatapull)
+```
+
+#### Check the function documentation
+```{r, results='hide', eval=FALSE}
+?msudatacon
+```
+
+#### In order to connect to MSUDATA, the msudatacon function always needs to be called first. The connection is done by JDBC installed in following directory
+
+```{r,, results='hide', eval=FALSE}
+drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","S:/Utilities/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar")
+```
 

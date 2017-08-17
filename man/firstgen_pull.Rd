@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{firstgen_pull}
 \alias{firstgen_pull}
-\title{firstgen_pull is a function to return students with the first generation status}
+\title{firstgen_pull is a function to return students with the first generation status.first_gen is available after 2008 for only undergraduates}
 \usage{
 firstgen_pull(ds = "SISFull", pidlist)
 }
@@ -15,7 +15,7 @@ firstgen_pull(ds = "SISFull", pidlist)
 this function returns a dataframe with only firstGen students
 }
 \description{
-firstgen_pull is a function to return students with the first generation status
+firstgen_pull is a function to return students with the first generation status.first_gen is available after 2008 for only undergraduates
 }
 \examples{
 \dontrun{firstgen_pull(ds='SISFull', pidlist=PAG$PID)}
