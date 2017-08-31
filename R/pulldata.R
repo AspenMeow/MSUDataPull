@@ -134,19 +134,35 @@ honor_pull <- function(ds='SISFull', pidlist){
         dat1 <- data.frame()
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid , Major_Code, Term_Code, Term_Seq_Id
+                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid , student_level_code,Major_Code, Term_Code, Term_Seq_Id
                                   from " , ds,".dbo.SISPMJR
-                                   where Pid in (", pidchar, ") and 
-                                          student_level_code='UN' and Major_Code in ('HONR', 'SCLR')  ", sep="")
+                                   where Pid in (", pidchar, ")    ", sep="")
                                           
                 )
                 
                 dat1 <- rbind(dat1, dat)
-                
+                dat1$Major_Code <- ifelse(dat1$Major_Code %in% c('HONR', 'SCLR') & dat1$student_level_code=='UN',dat1$Major_Code,'Others')
         }
-        if (nrow(dat1)>1){
-              merge(data.frame(Pid=pidlist),  reshape2::dcast(dat1, Pid + Term_Code+ Term_Seq_Id ~ Major_Code, n_distinct, value.var = 'Pid'),
+        if (sum(dat1$Major_Code %in% c('HONR', 'SCLR'))>1 ){
+             dat1<- merge(data.frame(Pid=pidlist),  reshape2::dcast(dat1, Pid + Term_Code+ Term_Seq_Id ~ Major_Code, n_distinct, value.var = 'Pid'),
                     by='Pid', all.x=T)
+             if(sum(names(dat1)=='HONR')>0 & sum(names(dat1)=='SCLR')>0){
+                   dat1<-  dat1[dat1$HONR==1  | dat1$SCLR==1   ,]
+                   dat1$honorStatus <- ifelse(dat1$HONR==1 & dat1$SCLR==1, 'HONR & SCLR', ifelse(
+                           dat1$HONR==1, 'HONR only', 'SCLR only'
+                   ))
+             }
+             else if(sum(names(dat1)=='HONR')>0 ){
+                    dat1<- dat1[dat1$HONR==1     ,]
+                    dat1$honorStatus <- 'HONR only'
+             }
+             else{
+                    dat1<- dat1[ dat1$SCLR==1   ,] 
+                    dat1$honorStatus <- 'SCLR only'
+             }
+             
+          dat1
+            
         }
         else{
                 warning("no honors from the list provided")
