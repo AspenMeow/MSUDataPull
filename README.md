@@ -18,9 +18,11 @@ library(msudatapull)
 
 #### 3.In order to connect to MSUDATA, the msudatacon function always needs to be called first. The connection is done by JDBC installed in following directory
 
+##### The function will call another function to prompt the password window
+
 ``` r
 drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","S:/Utilities/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar")
-msudatacon(userid = "***", password = "***")
+msudatacon(userid = "chendi4")
 ```
 
 #### 4.Check the function documentation
