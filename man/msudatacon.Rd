@@ -4,12 +4,10 @@
 \alias{msudatacon}
 \title{msudatacon is a function to allow connect to MSUDATA using JDBC}
 \usage{
-msudatacon(userid, password)
+msudatacon(userid)
 }
 \arguments{
 \item{userid}{a character value to indiate userid for MSUDATA}
-
-\item{password}{a character value to indicate the password}
 }
 \value{
 MSUDATA JDBC connection

@@ -1,7 +1,6 @@
 #' msudatacon is a function to allow connect to MSUDATA using JDBC 
 #' 
 #' @param userid a character value to indiate userid for MSUDATA
-#' @param password a character value to indicate the password
 #' 
 #' @return MSUDATA JDBC connection
 #' 
@@ -9,9 +8,10 @@
 #' @importFrom RJDBC dbConnect
 #' 
 #' @export
-msudatacon <- function(userid, password){
+msudatacon <- function(userid){
+        psswd <- .rs.askForPassword("MSUDATA Database Password:")
         drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","S:/Utilities/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar") 
-        MSUDATA <<- RJDBC::dbConnect(drv, "jdbc:sqlserver://msudata.ais.msu.edu", userid,password)
+        MSUDATA <<- RJDBC::dbConnect(drv, "jdbc:sqlserver://msudata.ais.msu.edu", userid,psswd)
 }
 
 #' cohort is a function to pull the entering cohorts for defined population. Fall cohort including summer starters
