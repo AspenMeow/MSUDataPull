@@ -23,6 +23,8 @@ msudatacon <- function(userid){
 #' @export
 cohort <- function(ds='SISFull', pidlist){
         #hegis cohort including summer starts for UNFRST for UNTRANS for old students the problem has not been fixed in SISFrzn prior to 1144
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         ls <- length(pidlist)
         
         #else {
@@ -80,6 +82,8 @@ cohort <- function(ds='SISFull', pidlist){
 #' @export
 firstgen_pull <- function(ds='SISFull', pidlist){
         #convert character vector to the comma separated string
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         ls <- length(pidlist)
         
         #else{
@@ -128,6 +132,8 @@ firstgen_pull <- function(ds='SISFull', pidlist){
 #' 
 #' @export
 honor_pull <- function(ds='SISFull', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -183,6 +189,8 @@ honor_pull <- function(ds='SISFull', pidlist){
 #' 
 #' @export
 mjrclass_pull <- function(ds='SISFull', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -226,6 +234,8 @@ mjrclass_pull <- function(ds='SISFull', pidlist){
 #' 
 #' @export
 firstgen_add <- function(ds='SISFull', maindat){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         if (sum(names(maindat)=='PID')>0){
                 pidlist <- maindat$PID
                 firstgends <- firstgen_pull(pidlist=pidlist)
@@ -256,6 +266,8 @@ firstgen_add <- function(ds='SISFull', maindat){
 #' 
 #' @export
 FA_pull <- function(pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -453,6 +465,8 @@ FA_pull <- function(pidlist){
 #' 
 #' @export
 gndr_race_pull <- function(ds='SISFull', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -475,4 +489,147 @@ gndr_race_pull <- function(ds='SISFull', pidlist){
                 dat <- rbind(dat, dat1)
         }
         dat
+}
+
+#' Preliminary.PFS2 is a function to get the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFrzn extracts
+#' 
+#' @param cohortex a character string to indicate the fall entering cohort was built from which flavor of the SISFrzn extract,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
+#' @param subenrlex a character string to indicate the subsequent enroll and Award population was pulled from which flavor of the SISFrzn extract,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
+#' @param cohortterm a numeric vector to indicate the fall entering cohort 1st Fall term,e.g 1144
+#' @param output indicate the output format, aggregate or list
+#' 
+#' @return aggregate output returns the persistence rate by entering cohort and lvl entry status. list returns the detail data frame
+#' 
+#' @importFrom dplyr ungroup
+#' @importFrom dplyr mutate
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+Preliminary.PFS2 <- function(cohortex='QRTRTERM', subenrlex='FIRSTDAY', cohortterm, output="aggregate"){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        if ( any(substr(as.character(cohortterm),4,4) != '4'))
+                stop('cohorterm must be numeric fall terms vector')
+        
+        if (! cohortex %in% c('QRTRTERM','FIRSTDAY','ENDTERM') | ! subenrlex %in% c('QRTRTERM','FIRSTDAY','ENDTERM'))
+                stop("cohortex and subenrlex value must be within 'QRTRTERM','FIRSTDAY','ENDTERM'")
+        
+        if (! output %in% c('aggregate','list'))
+                stop("output value must be either aggregate or list")
+        cohort <- dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Lvl_Entry_Status, a.Frzn_Term_Seq_Id,Int_Grad_TermId,
+                                              (case when b.Pid is null then 0 else 1 end ) as enrlFS2,
+                                              (case when b1.Pid is null then 0 else 1 end ) as enrlSS1
+                                              from SISFrzn.dbo.SISPLVT_",cohortex," a
+                                              left join 
+                                              ( select *
+                                              from   SISFrzn.dbo.SISPLVT_",subenrlex,"   
+                                              where System_Rgstn_Status in ('C','R','E','W') and Student_Level_Code='UN' and Primary_Lvl_Flag='Y') b 
+                                              on a.Pid=b.Pid and a.Frzn_Term_Seq_Id=b.Frzn_Term_Seq_Id-10 
+                                              left join (
+                                              select distinct Pid, PAWD.Intended_Award_Term, t.Term_Seq_Id as Int_Grad_TermId
+                                              from SISFrzn.dbo.SISPAWD_",subenrlex," as PAWD
+                                              inner join SISInfo.dbo.Term as t
+                                              on PAWD.Intended_Award_Term=t.Term_Code
+                                              where PAWD.Award_Stat_Code in ('CONF','RECM') and PAWD.Student_Level_Code='UN'
+                                              ) c
+                                              on a.Pid=c.Pid and a.Frzn_Term_Seq_Id<=c.Int_Grad_TermId
+                                              left join 
+                                              ( select *
+                                              from   SISFrzn.dbo.SISPLVT_",subenrlex,"   
+                                              where System_Rgstn_Status in ('C','R','E','W') and Student_Level_Code='UN' and Primary_Lvl_Flag='Y') b1 
+                                              on a.Pid=b1.Pid and a.Frzn_Term_Seq_Id=b1.Frzn_Term_Seq_Id-2
+                                              where a.Frzn_Term_Seq_Id in (",paste(cohortterm, collapse = ","),") and a.Student_Level_Code='UN' 
+                                              and a.System_Rgstn_Status in ('C','R','E','W')
+                                              and a.Primary_Lvl_Flag='Y'
+                                              and a.Hegis_Cohort_New='Y' 
+                                              
+                                              "))
+        
+     cohort <- cohort %>% mutate(AwdbyFS2=  ifelse(is.na(Int_Grad_TermId),0, ifelse( as.numeric(Frzn_Term_Seq_Id)<= as.numeric(Int_Grad_TermId) &
+                                                                       as.numeric(Frzn_Term_Seq_Id)+10> as.numeric(Int_Grad_TermId),1,0)),
+                                 AwdbySS1=  ifelse(is.na(Int_Grad_TermId),0, ifelse( as.numeric(Frzn_Term_Seq_Id)<= as.numeric(Int_Grad_TermId) &
+                                                                                             as.numeric(Frzn_Term_Seq_Id)+2> as.numeric(Int_Grad_TermId),1,0)))%>%
+                group_by(Pid, Lvl_Entry_Status, Frzn_Term_Seq_Id, enrlFS2, enrlSS1)%>% summarise(AwdbyFS2= max(AwdbyFS2, na.rm=T),
+                                                                                        AwdbySS1=max(AwdbySS1,na.rm=T))%>%
+                mutate(PFS2= ifelse(AwdbyFS2==1 | enrlFS2==1,1,0),
+                       PSS1= ifelse(AwdbySS1==1 | enrlSS1==1,1,0))
+        
+      if (output=='aggregate'){
+              cohort%>% group_by(Frzn_Term_Seq_Id, Lvl_Entry_Status)%>% summarise(HC=n_distinct(Pid), PSS1=mean(PSS1)*100, PFS2= mean(PFS2)*100)%>% ungroup()
+      }  
+     else if (output=='list'){
+             cohort
+     }
+        
+}
+
+#' Full.PFS2 is a function to get the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFull
+#' 
+#' @param cohortterm a numeric vector to indicate the fall entering cohort 1st Fall term,e.g 1144
+#' @param output indicate the output format, aggregate or list
+#' 
+#' @return aggregate output returns the persistence rate by entering cohort and lvl entry status. list returns the detail data frame
+#' 
+#' @importFrom dplyr ungroup
+#' @importFrom dplyr mutate
+#' @importFrom dplyr group_by
+#' @importFrom dplyr summarise
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+Full.PFS2 <- function(cohortterm, output="aggregate"){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        if ( any(substr(as.character(cohortterm),4,4) != '4'))
+                stop('cohorterm must be numeric fall terms vector')
+        
+        
+        if (! output %in% c('aggregate','list'))
+                stop("output value must be either aggregate or list")
+        
+        cohort <- dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Lvl_Entry_Status, a.Term_Seq_Id,Int_Grad_TermId,
+                                              (case when b.Pid is null then 0 else 1 end ) as enrlFS2,
+                                              (case when b1.Pid is null then 0 else 1 end ) as enrlSS1
+                                              from SISFull.dbo.SISPLVT a
+                                              left join 
+                                              ( select *
+                                              from   SISFull.dbo.SISPLVT
+                                              where System_Rgstn_Status in ('C','R','E','W') and Student_Level_Code='UN' and Primary_Lvl_Flag='Y') b 
+                                              on a.Pid=b.Pid and a.Term_Seq_Id=b.Term_Seq_Id-10 
+                                              left join (
+                                              select distinct Pid, PAWD.Intended_Award_Term, t.Term_Seq_Id as Int_Grad_TermId
+                                              from SISFull.dbo.SISPAWD as PAWD
+                                              inner join SISInfo.dbo.Term as t
+                                              on PAWD.Intended_Award_Term=t.Term_Code
+                                              where PAWD.Award_Stat_Code in ('CONF','RECM') and PAWD.Student_Level_Code='UN'
+                                              ) c
+                                              on a.Pid=c.Pid and a.Term_Seq_Id<=c.Int_Grad_TermId
+                                              left join 
+                                              ( select *
+                                              from   SISFull.dbo.SISPLVT
+                                              where System_Rgstn_Status in ('C','R','E','W') and Student_Level_Code='UN' and Primary_Lvl_Flag='Y') b1 
+                                              on a.Pid=b1.Pid and a.Term_Seq_Id=b1.Term_Seq_Id-2 
+                                              where a.Term_Seq_Id in (",paste(cohortterm, collapse = ","),") and a.Student_Level_Code='UN'
+                                              and a.System_Rgstn_Status in ('C','R','E','W')
+                                              and a.Primary_Lvl_Flag='Y'
+                                              and a.Hegis_Cohort_New='Y' 
+                                              
+                                              "))
+        cohort <- cohort %>% mutate(AwdFS2=  ifelse(is.na(Int_Grad_TermId),0, ifelse( as.numeric(Term_Seq_Id)<= as.numeric(Int_Grad_TermId) &
+                                                                                           as.numeric(Term_Seq_Id)+10> as.numeric(Int_Grad_TermId),1,0)),
+                                    AwdSS1=  ifelse(is.na(Int_Grad_TermId),0, ifelse( as.numeric(Term_Seq_Id)<= as.numeric(Int_Grad_TermId) &
+                                                                                              as.numeric(Term_Seq_Id)+2> as.numeric(Int_Grad_TermId),1,0)))%>%
+                group_by(Pid, Lvl_Entry_Status, Term_Seq_Id, enrlFS2, enrlSS1)%>% summarise(AwdbyFS2= max(AwdFS2, na.rm=T),
+                                                                                            AwdbySS1= max(AwdSS1, na.rm=T))%>%
+                mutate(PFS2= ifelse(AwdbyFS2==1 | enrlFS2==1,1,0),
+                       PSS1= ifelse(AwdbySS1==1 | enrlSS1==1,1,0))
+        if (output=='aggregate'){  
+          cohort%>% group_by(Term_Seq_Id, Lvl_Entry_Status)%>% summarise(HC=n_distinct(Pid), PSS1= mean(PSS1)*100,PFS2= mean(PFS2)*100)
+        }
+        else if (output=='list'){
+                cohort
+        }
+        
 }

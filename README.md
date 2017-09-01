@@ -33,10 +33,12 @@ msudatacon(userid = "chendi4")
 
 ### Functions
 
--   msudatacon
--   cohort
--   firstgen\_pull
--   honor\_pull
--   mjrclass\_pull
--   FA\_pull
--   gndr\_race\_pull
+-   **msudatacon** set up connection to msudata
+-   **cohort** find which cohort the population specified is from (extend PAG)
+-   **firstgen\_pull** admission first gen status for population specified (extend PAG)
+-   **honor\_pull** honor SCLR status for population specified (extend PAG)
+-   **mjrclass\_pull** primary major class code by Pid and term for population specified
+-   **FA\_pull** FA information by Pid and AidYr for population specified
+-   **gndr\_race\_pull** gender and race/ethnicity pull from SISFull or SISInfo for population specified (extend PAG)
+-   **Preliminary.PFS2** provide the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFrzn extracts
+-   **Full.PFS2** provide the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFull
