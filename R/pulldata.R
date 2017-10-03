@@ -274,7 +274,7 @@ FA_pull <- function(pidlist){
         FA <- data.frame()
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                SISFin <- dbGetQuery(MSUDATA, paste0( " select sam1.Pid, 
+                SISFin <- RJDBC::dbGetQuery(MSUDATA, paste0( " select sam1.Pid, 
 	   			sam1.AidYr, 
                                                       sam1.DepStf,
                                                       awd1.AidId, 
@@ -338,7 +338,7 @@ FA_pull <- function(pidlist){
                                                       where sam1.Pid in (", pidchar,")", sep=""
                                                       
                 ))
-                SamFrzn <- dbGetQuery(MSUDATA, paste0( " select sam1.Pid, 
+                SamFrzn <- RJDBC::dbGetQuery(MSUDATA, paste0( " select sam1.Pid, 
                                                        sam1.AidYr,
                                                        sam1.DepStf, 
                                                        awd1.AidId, 
@@ -458,22 +458,49 @@ FA_pull <- function(pidlist){
 
 #' gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids provided
 #' 
-#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo or SISFrzn
 #' @param pidlist A character vector of Pids
+#' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
 #' 
 #' @return A data frame with Pids, Gender, Ethnicity and Ctzn Code
 #' 
 #' @export
-gndr_race_pull <- function(ds='SISFull', pidlist){
+gndr_race_pull <- function(ds='SISFull', pidlist,ex="QRTRTERM"){
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISFrzn','SISInfo','SISFull'))
+                stop("ds must be specificed as SISFrzn, SISInfo or SISFull")
+        if (! ex %in% c('QRTRTERM','FIRSTDAY','ENDTERM') )
+                stop("ex value must be within 'QRTRTERM','FIRSTDAY','ENDTERM'")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
-        dat <- data.frame()
-        for (i in seq(lsg)){
-                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat1 <- dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,
+        
+        if(ds=='SISFrzn'){
+                dat <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,p.Frzn_Term_Seq_Id,
+                                                                   (case when p.Ctzn_Code = 'NOTC' then 'International' 
+                                                                   when e.Ipeds_Flag in ('10','11','6') then 'Asian/Hawaii/PI'
+                                                                   else i.Short_Desc end) as Ethnicity
+                                                                   from ", ds,".dbo.SISPRSN_",ex," p 
+                                                                   left join ",ds,".dbo.SISPETHN_",ex," e 
+                                                                   on p.Pid=e.Pid and p.Frzn_Term_Seq_Id=e.Frzn_Term_Seq_Id
+                                                                   left join SISInfo.dbo.IPEDS i 
+                                                                   on e.Ipeds_Flag=i.IPEDS_Flag
+                                                                   where p.Pid in (
+                                                                   ", pidchar,")", sep=""
+                                                                   
+                        ))
+                        dat <- rbind(dat, dat1)
+                }   
+        }
+        else {
+                dat <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,
                                                     (case when p.Ctzn_Code = 'NOTC' then 'International' 
                                                           when e.Ipeds_Flag in ('10','11','6') then 'Asian/Hawaii/PI'
                                                         else i.Short_Desc end) as Ethnicity
@@ -484,10 +511,13 @@ gndr_race_pull <- function(ds='SISFull', pidlist){
                                                     on e.Ipeds_Flag=i.IPEDS_Flag
                                                     where p.Pid in (
                                                     ", pidchar,")", sep=""
-                                                    
-                                                    ))
-                dat <- rbind(dat, dat1)
+                                                                   
+                        ))
+                        dat <- rbind(dat, dat1)
+                }    
         }
+        
+        
         dat
 }
 
@@ -518,7 +548,7 @@ Preliminary.PFS2 <- function(cohortex='QRTRTERM', subenrlex='FIRSTDAY', cohortte
         
         if (! output %in% c('aggregate','list'))
                 stop("output value must be either aggregate or list")
-        cohort <- dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Lvl_Entry_Status, a.Frzn_Term_Seq_Id,Int_Grad_TermId,
+        cohort <- RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Lvl_Entry_Status, a.Frzn_Term_Seq_Id,Int_Grad_TermId,
                                               (case when b.Pid is null then 0 else 1 end ) as enrlFS2,
                                               (case when b1.Pid is null then 0 else 1 end ) as enrlSS1
                                               from SISFrzn.dbo.SISPLVT_",cohortex," a
@@ -589,7 +619,7 @@ Full.PFS2 <- function(cohortterm, output="aggregate"){
         if (! output %in% c('aggregate','list'))
                 stop("output value must be either aggregate or list")
         
-        cohort <- dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Lvl_Entry_Status, a.Term_Seq_Id,Int_Grad_TermId,
+        cohort <- RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Lvl_Entry_Status, a.Term_Seq_Id,Int_Grad_TermId,
                                               (case when b.Pid is null then 0 else 1 end ) as enrlFS2,
                                               (case when b1.Pid is null then 0 else 1 end ) as enrlSS1
                                               from SISFull.dbo.SISPLVT a
@@ -654,7 +684,7 @@ pregpa_pull<- function(ds='SISFull', pidlist){
         dat <- data.frame()
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat1 <- dbGetQuery(MSUDATA,  paste0("select distinct Pid, 
+                dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct Pid, 
                                                            max((case when hs_gpa=0 then null else hs_gpa end) )as Pred_GPA
                                                     
                                                     from ", ds,".dbo.SISAGPA 
@@ -694,7 +724,7 @@ firstATL_pull <- function(ds='SISFull', pidlist){
         dat <- data.frame()
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat1 <- dbGetQuery(MSUDATA,  paste0("select distinct Pid,  Term_Seq_Id,Subj_Code,Crse_Code, Grade_Code
+                dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct Pid,  Term_Seq_Id,Subj_Code,Crse_Code, Grade_Code
                                                     
                                                     from ", ds,".dbo.SISPCRS
                            where    Primary_Lvl_Flag='Y'
@@ -858,4 +888,63 @@ rsadress_pull <- function(ds='SISFrzn', pidlist){
                 dat
         }
    
+}
+
+
+#' term.enroll is a function to get enrollment unit record data including official Frzn enrollment  
+#' 
+#' @param ds A character string to indicate the SIS source : SISFrzn or SISFull or SISInfo
+#' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
+#' @param termid a numeric vector to specify which term or terms to pull data from
+#' 
+#' @return A data frame with enrolled Pids and term related info
+#' 
+#' @export
+term.enroll <- function(ds='SISFrzn',  ex="QRTRTERM", termid){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISFrzn','SISInfo','SISFull'))
+                stop("ds must be specificed as SISFrzn, SISInfo or SISFull")
+        if (! ex %in% c('QRTRTERM','FIRSTDAY','ENDTERM') )
+                stop("ex value must be within 'QRTRTERM','FIRSTDAY','ENDTERM'")
+
+        
+        if (ds=='SISFrzn'){
+               
+                        dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct a.Pid, a.Frzn_Term_Seq_Id, a.Frzn_Term_Code, 
+                                                                   a.Student_Level_Code,a.Time_Status, a.Class_Code, a.Hegis_Cohort_New,a.Lvl_Entry_Status,
+                                                                   p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,
+                                                                   (case when p.Ctzn_Code = 'NOTC' then 'International' 
+                                                                   when e.Ipeds_Flag in ('10','11','6') then 'Asian/Hawaii/PI'
+                                                                   else i.Short_Desc end) as Ethnicity
+                                                                      from ",ds,".dbo.MSUPLVT_",ex," a   
+                                                                      left join ", ds,".dbo.SISPRSN_",ex," p
+                                                                      on a.Pid=p.Pid and a.Frzn_Term_Seq_Id=p.Frzn_Term_Seq_Id
+                                                                      left join ",ds,".dbo.SISPETHN_",ex," e 
+                                                                   on p.Pid=e.Pid and p.Frzn_Term_Seq_Id=e.Frzn_Term_Seq_Id
+                                                                   left join SISInfo.dbo.IPEDS i 
+                                                                   on e.Ipeds_Flag=i.IPEDS_Flag
+                                                                    where   a.System_Rgstn_Status in ('C','R','E','W') and a.student_level_code not in ('HG', 'HU', 'TE')
+                                                                      and a.Primary_Lvl_Flag='Y' and a.Frzn_Term_Seq_Id in (",termid,")
+                                                                    ")
+                                                   
+                        )
+                        dat1
+                        
+                
+        }
+        else {
+                dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid, Term_Seq_Id, Term_Code, Student_Level_Code,Time_Status, Class_Code, Hegis_Cohort_New,Lvl_Entry_Status
+                                                                      from ",ds,".dbo.SISPLVT   
+                                                                    where   System_Rgstn_Status in ('C','R','E','W') and student_level_code not in ('HG', 'HU', 'TE')
+                                                                      and Primary_Lvl_Flag='Y' and Term_Seq_Id in (",termid,")
+                                                                    ")
+                )
+                gndr <- gndr_race_pull(ds=ds, pidlist = unique(dat1$Pid))
+                merge(dat1,gndr,by='Pid', all.x=T)
+  
+        }
+        
+        
+        
 }

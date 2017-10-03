@@ -4,12 +4,14 @@
 \alias{gndr_race_pull}
 \title{gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids provided}
 \usage{
-gndr_race_pull(ds = "SISFull", pidlist)
+gndr_race_pull(ds = "SISFull", pidlist, ex = "QRTRTERM")
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFull or SISInfo}
+\item{ds}{A character string to indicate the SIS source : SISFull or SISInfo or SISFrzn}
 
 \item{pidlist}{A character vector of Pids}
+
+\item{ex}{a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
 }
 \value{
 A data frame with Pids, Gender, Ethnicity and Ctzn Code

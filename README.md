@@ -47,3 +47,4 @@ msudatacon(userid = "chendi4")
 -   **firsttermgpa\_pull** provide first term term GPA for the population specified (if term gpa credit is zero, recode to null)
 -   **indicator\_pull** provide indicator values on scale from 1-7 for the population specified (null for level other than AT and UN)
 -   **rsadress\_pull** provide residence address country, state, county from SISPRSN for the population specified. If SISFrzn used, it uses qtrterm extract to get the status as entry term.
+-   **term.enroll** provide unit record data on term enrollment including the official enrollment if specifying SISFrzn
