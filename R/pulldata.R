@@ -633,3 +633,229 @@ Full.PFS2 <- function(cohortterm, output="aggregate"){
         }
         
 }
+
+
+#' pregpa_pull is a function to pull MSU calculated GPA from SISFull
+#' 
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param pidlist A character vector of Pids
+#' 
+#' @return A data frame with Pids, max value of predGPA if multiple. give null if hsgpa is zero
+#' 
+#' @export
+pregpa_pull<- function(ds='SISFull', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISFull','SISInfo'))
+                stop("ds must be either SISFull or SISInfo")
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        dat <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                dat1 <- dbGetQuery(MSUDATA,  paste0("select distinct Pid, 
+                                                           max((case when hs_gpa=0 then null else hs_gpa end) )as Pred_GPA
+                                                    
+                                                    from ", ds,".dbo.SISAGPA 
+                                                    
+                                                    where  hs_gpa_type_code in ('PRED') and  Pid in (
+                                                    ", pidchar,") 
+                                                    group by Pid ", sep=""
+                                                    
+                ))
+                dat <- rbind(dat, dat1)
+        }
+        dat
+        
+}
+
+#' firstATL_pull is a function to pull First ATL Course and Grade
+#' 
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param pidlist A character vector of Pids
+#' 
+#' @return A data frame with Pids, Term_Seq_Id when first ATL was taken, 1st ATL and Grade
+#' 
+#' @importFrom dplyr ungroup
+#' @importFrom dplyr mutate
+#' @importFrom dplyr group_by
+#' @importFrom dplyr filter
+#' @importFrom dplyr select
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+firstATL_pull <- function(ds='SISFull', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        dat <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                dat1 <- dbGetQuery(MSUDATA,  paste0("select distinct Pid,  Term_Seq_Id,Subj_Code,Crse_Code, Grade_Code
+                                                    
+                                                    from ", ds,".dbo.SISPCRS
+                           where    Primary_Lvl_Flag='Y'
+                    and ((Subj_Code in ('ATL','WRA') and left(Crse_Code,1) in ('1', 'Q1')) or 
+                    (Subj_Code = 'MC' and Crse_Code in ('111','Q111', '112')) or 
+                   (Subj_Code = 'LBS' and Crse_Code in ('133')) or
+                   (Subj_Code = 'AL' and Crse_Code in ('192','192H'))) and  Pid in (
+                                                    ", pidchar,") 
+                                                     ", sep=""
+                                                    
+                ))
+                dat <- rbind(dat, dat1)
+        }
+        
+        dat<-dat %>% group_by(Pid)%>% mutate(minterm=min(Term_Seq_Id))%>%filter(minterm==Term_Seq_Id)%>%select(-c(minterm)) %>%ungroup()
+        dat<-as.data.frame(dat)%>% group_by(Pid)%>% mutate(mincode=min(Crse_Code))%>% filter(Crse_Code==mincode)%>%select(-c(mincode))%>%ungroup()
+        as.data.frame(dat)
+}
+
+#' firsttermgpa_pull is a function to pull First Term GPA by student level
+#' 
+#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param pidlist A character vector of Pids
+#' 
+#' @return A data frame with Pids, student_level,first_term_seq_id, termGPA, firstterm GPA credits
+#' 
+#' @importFrom dplyr ungroup
+#' @importFrom dplyr mutate
+#' @importFrom dplyr group_by
+#' @importFrom dplyr filter
+#' @importFrom dplyr rename
+#' @importFrom dplyr select
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+firsttermgpa_pull <- function(ds='SISFull', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        dat <- data.frame()
+        for (i in seq(lsg)){
+                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid, s.Student_Level_Code, s.Term_Seq_Id, 
+                                                             s.Msu_Lt_Gpa_Credits,
+                                                             (case when s.Msu_Lt_Gpa_Credits=0 then null else Msu_Lt_Grd_Pt_Avg end) as TermGPA
+                                                           
+                                                           from ", ds,".dbo.SISPLVT s
+                                                           
+                                                           where s.Pid in (", pidchar, ")  and  s.Primary_Lvl_Flag='Y' and 
+                                                           s.System_Rgstn_Status in ('C','R','E','W')
+                                                           ")
+                                          
+                )
+                
+                dat <- rbind(dat, dat1)
+        }
+        
+        dat<-dat %>% group_by(Pid,Student_Level_Code )%>% mutate(minterm=min(Term_Seq_Id))%>%filter(minterm==Term_Seq_Id)%>% 
+                rename(FirstTerm=Term_Seq_Id, Firsttermcredit=Msu_Lt_Gpa_Credits, FirsttermGPA=TermGPA)%>%
+                select(-c(minterm)) %>%ungroup()
+        as.data.frame(dat)
+}
+
+#' indicator_pull is a function to pull indicator and atrisk for undergrads and AT from SISFull
+#' 
+#' @param pidlist A character vector of Pids
+#' 
+#' @return A data frame with Pids, indicator,atrisk,FirsttermGPA, student_level, pred_GPA, 1stATL
+#' 
+#' @importFrom dplyr mutate
+#' @importFrom magrittr "%>%"
+#' 
+#' @export
+indicator_pull <- function( pidlist){
+        dat <- data.frame(Pid=pidlist)
+        predgpa <- pregpa_pull(pidlist = pidlist)
+        dat <- merge(dat, predgpa, by='Pid', all.x = T)
+        gpa1st<-firsttermgpa_pull(pidlist = pidlist)
+        dat <- merge(dat, gpa1st, by='Pid', all.x = T)
+        ATL1st <- firstATL_pull(pidlist = pidlist)
+         merge(dat, ATL1st, by='Pid', all.x = T) %>% mutate(indicator= ifelse(Student_Level_Code %in% c('UN','AT'), 4,NA),
+                                                                 indicator=ifelse(! is.na(indicator) & FirsttermGPA>=2.5 & ! is.na(FirsttermGPA), indicator+1, indicator),
+                                                                 indicator=ifelse(! is.na(indicator) & FirsttermGPA<1.6 & ! is.na(FirsttermGPA), indicator-1, indicator),
+                                                                 indicator=ifelse(! is.na(indicator) & Grade_Code %in% c('3.0','3.5','4.0') & ! is.na(Grade_Code), indicator+1, indicator),
+                                                                 indicator=ifelse(! is.na(indicator) & Grade_Code %in% c('0.5', '1.0', '1.5','0.0') & ! is.na(Grade_Code), indicator-1, indicator),
+                                                                 indicator=ifelse(! is.na(indicator) & Pred_GPA>=2.4 & ! is.na(Pred_GPA), indicator+1, indicator),
+                                                                 indicator=ifelse(! is.na(indicator) & Pred_GPA<2.0 & ! is.na(Pred_GPA), indicator-1, indicator),
+                                                            atrisk= ifelse(Student_Level_Code %in% c('UN','AT'),'N',NA),
+                                                            atrisk= ifelse(atrisk=='N' & ((Pred_GPA<2.0 & ! is.na(Pred_GPA)) | (FirsttermGPA<1.6 & ! is.na(FirsttermGPA)) |
+                                                                                      (Grade_Code %in% c('0.5', '1.0', '1.5','0.0') & ! is.na(Grade_Code)) ),'Y', atrisk))
+}
+
+
+#' rsadress_pull is a function to pull the residence address from prsn default ds shows address in entry term
+#' 
+#' @param ds A character string to indicate the SIS source : SISFrzn or SISFull or SISInfo
+#' @param pidlist A character vector of Pids
+#' 
+#' @return A data frame with Pids, student_level_code and entry Term residence address country county state
+#' 
+#' @importFrom dplyr select
+#' @importFrom magrittr "%>%"
+#'  
+#' @export
+rsadress_pull <- function(ds='SISFrzn', pidlist){
+        if(! exists('MSUDATA') )
+                stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISFrzn','SISInfo','SISFull'))
+                stop("ds must be specificed as SISFrzn, SISInfo or SISFull")
+        ls <- length(pidlist)
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        
+        if (ds=='SISFrzn'){
+                dat <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct p.Pid, p.Frzn_Term_Seq_Id as Entry_Term_Seq_Id,p.ADR_CNTRY_CODE ,c.Full_Name as ADR_CNTRY_NM ,   
+                                                                    p.ADR_CNTY_CODE ,d.Full_Name as ADR_CNTY_NM,
+                                                                    p.Adr_State_Code , e.Full_Name as ADR_State_NM 
+                                                                    from ", ds,".dbo.SISPRSN_QRTRTERM p
+                                                                    left join SISInfo.dbo.COUNTRY c
+                                                                    on p.Adr_Cntry_Code=c.Cntry_Code
+                                                                    left join SISInfo.dbo.COUNTY d
+                                                                    on p.ADR_CNTY_CODE=d.Cnty_Code
+                                                                    left join SISInfo.dbo.STATE e
+                                                                    on p.Adr_State_Code=e.State_Code and p.Adr_Cntry_Code=e.Cntry_Code 
+                                                                    where p.Pid in (", pidchar, ")  
+                                                                    ")
+                                                   
+                        )
+                        
+                        dat <- rbind(dat, dat1)
+                }
+                ds <- cohort(pidlist = pidlist)
+                merge(ds,dat, by=c('Pid','Entry_Term_Seq_Id'), all.x=T)%>% select(Pid, Student_Level_Code,ADR_CNTRY_CODE, ADR_CNTRY_NM,ADR_CNTY_CODE,ADR_CNTY_NM,Adr_State_Code,ADR_State_NM)
+        }
+        else {
+                dat <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct p.Pid, p.ADR_CNTRY_CODE ,c.Full_Name as ADR_CNTRY_NM ,   
+                                       p.ADR_CNTY_CODE ,d.Full_Name as ADR_CNTY_NM,
+                                       p.Adr_State_Code , e.Full_Name as ADR_State_NM 
+                                       from ", ds,".dbo.SISPRSN p
+                                        left join SISInfo.dbo.COUNTRY c
+                                                           on p.Adr_Cntry_Code=c.Cntry_Code
+                                                            left join SISInfo.dbo.COUNTY d
+                                                            on p.ADR_CNTY_CODE=d.Cnty_Code
+                                                            left join SISInfo.dbo.STATE e
+                                                            on p.Adr_State_Code=e.State_Code and p.Adr_Cntry_Code=e.Cntry_Code 
+                                           where p.Pid in (", pidchar, ")  
+                                                           ")
+                                                   
+                        )
+                        
+                        dat <- rbind(dat, dat1)
+                }
+                dat
+        }
+   
+}
