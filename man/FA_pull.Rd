@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{FA_pull}
 \alias{FA_pull}
-\title{FA_pull is a function to get Pell, FAFSA 1st Gen, and other FA related Info by Pid}
+\title{Financial Aid Related Info}
 \usage{
 FA_pull(pidlist)
 }
@@ -10,8 +10,8 @@ FA_pull(pidlist)
 \item{pidlist}{a character vectors of Pids}
 }
 \value{
-a data frame with Pid, entry cohort, and FA info
+a data frame with Pid, entry cohort, and FA info by AidYr. Note: FA in PAG after 2000
 }
 \description{
-FA_pull is a function to get Pell, FAFSA 1st Gen, and other FA related Info by Pid
+FA_pull is a function to get Pell grant, FAFSA 1st Gen, and other FA related Info by Pid and AidYr
 }

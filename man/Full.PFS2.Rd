@@ -2,12 +2,12 @@
 % Please edit documentation in R/pulldata.R
 \name{Full.PFS2}
 \alias{Full.PFS2}
-\title{Full.PFS2 is a function to get the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFull}
+\title{Undergrad Persistence Rate SISFull}
 \usage{
 Full.PFS2(cohortterm, output = "aggregate")
 }
 \arguments{
-\item{cohortterm}{a numeric vector to indicate the fall entering cohort 1st Fall term,e.g 1144}
+\item{cohortterm}{a numeric vector to indicate the fall entering cohort 1st Fall term e.g 1144}
 
 \item{output}{indicate the output format, aggregate or list}
 }

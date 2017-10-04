@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{indicator_pull}
 \alias{indicator_pull}
-\title{indicator_pull is a function to pull indicator and atrisk for undergrads and AT from SISFull}
+\title{Performance Indicator}
 \usage{
 indicator_pull(pidlist)
 }
@@ -10,8 +10,8 @@ indicator_pull(pidlist)
 \item{pidlist}{A character vector of Pids}
 }
 \value{
-A data frame with Pids, indicator,atrisk,FirsttermGPA, student_level, pred_GPA, 1stATL
+A data frame with Pids indicator atrisk FirsttermGPA student_level pred_GPA 1stATL
 }
 \description{
-indicator_pull is a function to pull indicator and atrisk for undergrads and AT from SISFull
+indicator_pull is a function to pull indicator and atrisk for UN and AT from SISFull
 }

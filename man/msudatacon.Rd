@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{msudatacon}
 \alias{msudatacon}
-\title{msudatacon is a function to allow connect to MSUDATA using JDBC}
+\title{MSUDATA connection}
 \usage{
 msudatacon(userid)
 }
@@ -10,8 +10,8 @@ msudatacon(userid)
 \item{userid}{a character value to indiate userid for MSUDATA}
 }
 \value{
-MSUDATA JDBC connection
+MSUDATA JDBC connection established in global environment
 }
 \description{
-msudatacon is a function to allow connect to MSUDATA using JDBC
+\code{msudatacon} is a function to allow connect to MSUDATA using JDBC
 }

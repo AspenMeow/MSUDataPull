@@ -2,16 +2,20 @@
 % Please edit documentation in R/pulldata.R
 \name{cohort}
 \alias{cohort}
-\title{cohort is a function to pull the entering cohorts for defined population. Fall cohort including summer starters}
+\title{Entering cohort Info}
 \usage{
-cohort(ds = "SISFull", pidlist)
+cohort(ds = "SISFull", ex = "QRTRTERM", pidlist)
 }
 \arguments{
+\item{ds}{A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo}
+
+\item{ex}{a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
+
 \item{pidlist}{a character vector of Pids interested}
 }
 \value{
-a dataframe with Pid, cohort, Entry Term, AidYr Info
+a dataframe with Pid, student_level, cohort, Entry Term, AidYr Info
 }
 \description{
-cohort is a function to pull the entering cohorts for defined population. Fall cohort including summer starters
+cohort is a function to get the entering cohorts for defined population including all levels. Fall cohort including summer starters
 }

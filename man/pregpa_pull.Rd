@@ -2,12 +2,12 @@
 % Please edit documentation in R/pulldata.R
 \name{pregpa_pull}
 \alias{pregpa_pull}
-\title{pregpa_pull is a function to pull MSU calculated GPA from SISFull}
+\title{MSU Calcuated GPA}
 \usage{
 pregpa_pull(ds = "SISFull", pidlist)
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFull or SISInfo}
+\item{ds}{A character string to indicate the SIS source SISFull or SISInfo}
 
 \item{pidlist}{A character vector of Pids}
 }
@@ -15,5 +15,5 @@ pregpa_pull(ds = "SISFull", pidlist)
 A data frame with Pids, max value of predGPA if multiple. give null if hsgpa is zero
 }
 \description{
-pregpa_pull is a function to pull MSU calculated GPA from SISFull
+pregpa_pull is a function to pull MSU calculated GPA from SISFull or SISInfo
 }

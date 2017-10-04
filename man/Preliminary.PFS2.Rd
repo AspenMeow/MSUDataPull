@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{Preliminary.PFS2}
 \alias{Preliminary.PFS2}
-\title{Preliminary.PFS2 is a function to get the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFrzn extracts}
+\title{Preliminary Undergrad Persistence Rate}
 \usage{
 Preliminary.PFS2(cohortex = "QRTRTERM", subenrlex = "FIRSTDAY", cohortterm,
   output = "aggregate")
@@ -12,7 +12,7 @@ Preliminary.PFS2(cohortex = "QRTRTERM", subenrlex = "FIRSTDAY", cohortterm,
 
 \item{subenrlex}{a character string to indicate the subsequent enroll and Award population was pulled from which flavor of the SISFrzn extract,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
 
-\item{cohortterm}{a numeric vector to indicate the fall entering cohort 1st Fall term,e.g 1144}
+\item{cohortterm}{a numeric vector to indicate the fall entering cohort 1st Fall term e.g 1144}
 
 \item{output}{indicate the output format, aggregate or list}
 }

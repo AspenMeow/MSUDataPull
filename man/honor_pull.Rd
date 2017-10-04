@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{honor_pull}
 \alias{honor_pull}
-\title{honor_pull is a function to return students with the honor or academic scholar status by term}
+\title{Honor and Academic Scholar}
 \usage{
 honor_pull(ds = "SISFull", pidlist)
 }
@@ -12,12 +12,8 @@ honor_pull(ds = "SISFull", pidlist)
 \item{pidlist}{a character vector to input the population interested identifying by Pid}
 }
 \value{
-this function returns a dataframe with only honor or academic scholar students by term
+this function returns a dataframe with combined honor or academic scholar status by term
 }
 \description{
-honor_pull is a function to return students with the honor or academic scholar status by term
-}
-\examples{
-\dontrun{honor_pull(ds='SISFull', pidlist=PAG$PID)}
-
+honor_pull is a function to get student with the honor or academic scholar combined status by term
 }

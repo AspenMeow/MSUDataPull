@@ -2,22 +2,20 @@
 % Please edit documentation in R/pulldata.R
 \name{mjrclass_pull}
 \alias{mjrclass_pull}
-\title{mjrclass_pull is a function to return student term info on class code and the primary major}
+\title{Primary Major Class Info by Term}
 \usage{
-mjrclass_pull(ds = "SISFull", pidlist)
+mjrclass_pull(ds = "SISFull", ex = "QRTRTERM", pidlist)
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFull or SISInfo}
+\item{ds}{a character string to indicate the SIS source : SISFull or SISInfo or SISFrzn}
+
+\item{ex}{a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
 
 \item{pidlist}{a character vector to input the population interested identifying by Pid}
 }
 \value{
-this function returns a dataframe with only honor or academic scholar students by term
+this function returns a dataframe primary major, college, dept, and class code by term
 }
 \description{
-mjrclass_pull is a function to return student term info on class code and the primary major
-}
-\examples{
-\dontrun{mjrclass_pull(ds='SISFull', pidlist=PAG$PID)}
-
+mjrclass_pull is a function to get student term info on class code and the primary major
 }

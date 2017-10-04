@@ -2,12 +2,12 @@
 % Please edit documentation in R/pulldata.R
 \name{firstATL_pull}
 \alias{firstATL_pull}
-\title{firstATL_pull is a function to pull First ATL Course and Grade}
+\title{First WRA course and Grade}
 \usage{
 firstATL_pull(ds = "SISFull", pidlist)
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFull or SISInfo}
+\item{ds}{A character string to indicate the SIS source  SISFull or SISInfo}
 
 \item{pidlist}{A character vector of Pids}
 }

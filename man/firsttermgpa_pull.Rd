@@ -2,12 +2,12 @@
 % Please edit documentation in R/pulldata.R
 \name{firsttermgpa_pull}
 \alias{firsttermgpa_pull}
-\title{firsttermgpa_pull is a function to pull First Term GPA by student level}
+\title{First Term GPA}
 \usage{
 firsttermgpa_pull(ds = "SISFull", pidlist)
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFull or SISInfo}
+\item{ds}{A character string to indicate the SIS source  SISFull or SISInfo}
 
 \item{pidlist}{A character vector of Pids}
 }

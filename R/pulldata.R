@@ -1,8 +1,10 @@
-#' msudatacon is a function to allow connect to MSUDATA using JDBC 
+#' MSUDATA connection
+#' 
+#' \code{msudatacon} is a function to allow connect to MSUDATA using JDBC
 #' 
 #' @param userid a character value to indiate userid for MSUDATA
 #' 
-#' @return MSUDATA JDBC connection
+#' @return MSUDATA JDBC connection established in global environment
 #' 
 #' @importFrom RJDBC JDBC
 #' @importFrom RJDBC dbConnect
@@ -14,22 +16,29 @@ msudatacon <- function(userid){
         MSUDATA <<- RJDBC::dbConnect(drv, "jdbc:sqlserver://msudata.ais.msu.edu", userid,psswd)
 }
 
-#' cohort is a function to pull the entering cohorts for defined population. Fall cohort including summer starters
-#' 
+#' Entering cohort Info
+#'
+#' cohort is a function to get the entering cohorts for defined population including all levels. Fall cohort including summer starters
+#'
+#' @param ds A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo
+#' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM 
 #' @param pidlist a character vector of Pids interested
 #' 
-#' @return a dataframe with Pid, cohort, Entry Term, AidYr Info
+#' @return a dataframe with Pid, student_level, cohort, Entry Term, AidYr Info
 #'
 #' @export
-cohort <- function(ds='SISFull', pidlist){
+cohort <- function(ds='SISFull', ex='QRTRTERM',pidlist){
         #hegis cohort including summer starts for UNFRST for UNTRANS for old students the problem has not been fixed in SISFrzn prior to 1144
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISFrzn','SISInfo','SISFull'))
+                stop("ds must be specificed as SISFrzn, SISInfo or SISFull")
+        if (! ex %in% c('QRTRTERM','FIRSTDAY','ENDTERM') )
+                stop("ex value must be within 'QRTRTERM','FIRSTDAY','ENDTERM'")
         ls <- length(pidlist)
-        
-        #else {
-                lsg <- ceiling( ls/1000)
-                pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        lsg <- ceiling( ls/1000)
+        pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+        if (ds %in% c("SISFull","SISInfo")){
                 dat1 <- data.frame()
                 for (i in seq(lsg)){
                         pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
@@ -58,16 +67,51 @@ cohort <- function(ds='SISFull', pidlist){
                         )
                         dat1 <- rbind(dat1, dat)
                         
+                }  
+        }
+        else {
+                dat1 <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( " select a.Pid, a.Student_Level_Code,a.Frzn_Term_Seq_Id as Entry_Term_Seq_Id, a.Frzn_Term_Code as Entry_Term_Code ,
+                                                                   substring(a.Frzn_Term_Code,1,1) as Trm, 
+                                                                   substring(a.Frzn_Term_Seq_Id,2,2) as ch,
+                                                                   (case when  c.System_Rgstn_Status in ('R','C','E','W') then 'Y' else 'N' end ) as SuTrm
+                                                                   
+                                                                   from ",ds,".dbo.MSUPLVT_",ex," as a 
+                                                                   inner join (
+                                                                   
+                                                                   select distinct Pid,Student_Level_Code, min(Frzn_Term_Seq_Id) as minterm
+                                                                   from " , ds,".dbo.MSUPLVT_",ex," 
+                                                                   where Pid in (", pidchar, ") 
+                                                                   and Primary_Lvl_Flag='Y' 
+                                                                   and System_Rgstn_Status in ('R','C','E','W')
+                                                                   group by Pid,Student_Level_Code
+                                                                   
+                                                                   ", ") as b 
+                                                                   on a.Pid=b.Pid and a.Frzn_Term_Seq_Id=b.minterm and a.Student_Level_Code=b.Student_Level_Code
+                                                                   left join ",ds,".dbo.MSUPLVT_",ex," as c
+                                                                   on a.Pid=c.Pid and a.Frzn_Term_Seq_Id=c.Frzn_Term_Seq_Id-2 and a.Student_Level_Code=c.Student_Level_Code
+                                                                   and a.Primary_Lvl_Flag=c.Primary_Lvl_Flag
+                                                                   where  a.Primary_Lvl_Flag='Y' 
+                                                                   and a.System_Rgstn_Status in ('R','C','E','W') "  ,sep="")
+                                                  
+                        )
+                        dat1 <- rbind(dat1, dat)
+                        
                 }
+        }
+               
                 dat1$COHORT<- ifelse(as.numeric( dat1$ch) >=68, 1900+ as.numeric( dat1$ch), 2000+as.numeric( dat1$ch) )
                 dat1$ENTRANT_SUMMER_FALL <- ifelse(dat1$Trm == 'F' | (dat1$Trm=='U' & dat1$SuTrm=='Y'), 'Y', 'N')
                 dat1$AidYr <- ifelse(dat1$Trm=='U', dat1$COHORT, dat1$COHORT+1)
                 dat1[,c('Pid','COHORT', 'ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','AidYr','Student_Level_Code')]
-        #}
+        
 }
 
-
-#' firstgen_pull is a function to return students with the first generation status.first_gen is available after 2008 for only undergraduates
+#' Admission First Gen 
+#'
+#' firstgen_pull is a function to return student records with the admission first generation status from SISAPRS.first_gen is available after entering 2008 for UN and AT
 #' 
 #' @param ds A character string to indicate the SIS source : SISFull or SISInfo
 #' @param pidlist a character vector to input the population interested identifying by Pid
@@ -76,14 +120,13 @@ cohort <- function(ds='SISFull', pidlist){
 #' 
 #' @importFrom RJDBC dbGetQuery
 #' 
-#' @examples 
-#' \dontrun{firstgen_pull(ds='SISFull', pidlist=PAG$PID)}
-#' 
 #' @export
 firstgen_pull <- function(ds='SISFull', pidlist){
         #convert character vector to the comma separated string
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISInfo','SISFull'))
+                stop("ds must be specificed as only SISFull ir SISInfo")
         ls <- length(pidlist)
         
         #else{
@@ -109,7 +152,7 @@ firstgen_pull <- function(ds='SISFull', pidlist){
                 #cohortds <- cohort(pidlist=dat1)
                 dat1 <- merge(dat1,  cohort(pidlist=pidlist)[,c('Pid','COHORT','Student_Level_Code')], by='Pid')
                 #dat1[dat1$COHORT>=2008, c('Pid','FGEN')]
-                dat1$First_Gen <- ifelse(dat1$COHORT>=2008 & dat1$FGEN=='Y', 'Y','N')
+                dat1$First_Gen <- ifelse(dat1$COHORT<2008 | ! dat1$Student_Level_Code %in% c('AT','UN'), NA, ifelse(dat1$FGEN=='Y','Y','N'))
                 dat1
                 
         #}
@@ -117,91 +160,88 @@ firstgen_pull <- function(ds='SISFull', pidlist){
       
 }
 
-#' honor_pull is a function to return students with the honor or academic scholar status by term
+#' Honor and Academic Scholar
+#'
+#' honor_pull is a function to get student with the honor or academic scholar combined status by term
 #' 
 #' @param ds A character string to indicate the SIS source : SISFull or SISInfo
 #' @param pidlist a character vector to input the population interested identifying by Pid
 #' 
-#' @return this function returns a dataframe with only honor or academic scholar students by term
+#' @return this function returns a dataframe with combined honor or academic scholar status by term
 #' 
 #' @importFrom RJDBC dbGetQuery
 #' @importFrom reshape2 dcast
-#' 
-#' @examples 
-#' \dontrun{honor_pull(ds='SISFull', pidlist=PAG$PID)}
 #' 
 #' @export
 honor_pull <- function(ds='SISFull', pidlist){
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISInfo','SISFull'))
+                stop("ds must be only specificed as SISFull or SISInfo")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
         dat1 <- data.frame()
         for (i in seq(lsg)){
                 pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid , student_level_code,Major_Code, Term_Code, Term_Seq_Id
+                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid , Student_Level_Code,Major_Code, Term_Code, Term_Seq_Id
                                   from " , ds,".dbo.SISPMJR
                                    where Pid in (", pidchar, ")    ", sep="")
                                           
                 )
                 
                 dat1 <- rbind(dat1, dat)
-                dat1$Major_Code <- ifelse(dat1$Major_Code %in% c('HONR', 'SCLR') & dat1$student_level_code=='UN',dat1$Major_Code,'Others')
+                dat1$Major_Code <- ifelse(dat1$Major_Code %in% c('HONR', 'SCLR') ,dat1$Major_Code,'Others')
         }
-        if (sum(dat1$Major_Code %in% c('HONR', 'SCLR'))>1 ){
-             dat1<- merge(data.frame(Pid=pidlist),  reshape2::dcast(dat1, Pid + Term_Code+ Term_Seq_Id ~ Major_Code, n_distinct, value.var = 'Pid'),
-                    by='Pid', all.x=T)
-             if(sum(names(dat1)=='HONR')>0 & sum(names(dat1)=='SCLR')>0){
-                   dat1<-  dat1[dat1$HONR==1  | dat1$SCLR==1   ,]
-                   dat1$honorStatus <- ifelse(dat1$HONR==1 & dat1$SCLR==1, 'HONR & SCLR', ifelse(
-                           dat1$HONR==1, 'HONR only', 'SCLR only'
-                   ))
-             }
-             else if(sum(names(dat1)=='HONR')>0 ){
-                    dat1<- dat1[dat1$HONR==1     ,]
-                    dat1$honorStatus <- 'HONR only'
-             }
-             else{
-                    dat1<- dat1[ dat1$SCLR==1   ,] 
-                    dat1$honorStatus <- 'SCLR only'
-             }
-             
-          dat1
-            
+        dat1 <- reshape2::dcast(dat1, Pid +  Student_Level_Code+Term_Code+Term_Seq_Id~ Major_Code,value.var = 'Pid', length )
+        if (any(names(dat1)=='HONR') &  any(names(dat1)=='SCLR') ){
+                dat1$honorStatus <- ifelse(dat1$HONR>=1 & dat1$SCLR>=1,'HONR & SCLR', ifelse(dat1$HONR>=1, 'HONR only', ifelse(dat1$SCLR>=1, 'SCLR only','Neither')))
+        }
+        else if (any(names(dat1)=='HONR')) {
+                dat1$honorStatus <- ifelse(dat1$HONR>=1,'HONR only','Neither')
+        }
+        else if (any(names(dat1)=='SCLR')) {
+                dat1$honorStatus <- ifelse(dat1$SCLR>=1,'SCLR only','Neither')
         }
         else{
-                warning("no honors from the list provided")
+                dat1$honorStatus <- 'Neither'
         }
+        
+        dat1[,c('Pid','Student_Level_Code','Term_Code','Term_Seq_Id','honorStatus')]
 }
 
-#' mjrclass_pull is a function to return student term info on class code and the primary major
+#' Primary Major Class Info by Term
+#'
+#' mjrclass_pull is a function to get student term info on class code and the primary major
 #' 
-#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param ds a character string to indicate the SIS source : SISFull or SISInfo or SISFrzn
+#' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
 #' @param pidlist a character vector to input the population interested identifying by Pid
 #' 
-#' @return this function returns a dataframe with only honor or academic scholar students by term
+#' @return this function returns a dataframe primary major, college, dept, and class code by term
 #' 
 #' @importFrom RJDBC dbGetQuery
 #' 
-#' @examples 
-#' \dontrun{mjrclass_pull(ds='SISFull', pidlist=PAG$PID)}
-#' 
 #' @export
-mjrclass_pull <- function(ds='SISFull', pidlist){
+mjrclass_pull <- function(ds='SISFull', ex='QRTRTERM',pidlist){
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISFrzn','SISInfo','SISFull'))
+                stop("ds must be specificed as SISFrzn, SISInfo or SISFull")
+        if (! ex %in% c('QRTRTERM','FIRSTDAY','ENDTERM') )
+                stop("ex value must be within 'QRTRTERM','FIRSTDAY','ENDTERM'")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
-        dat1 <- data.frame()
-        for (i in seq(lsg)){
-                pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid, s.Student_Level_Code, s.Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
+        if (ds=="SISFrzn"){
+                dat1 <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid, s.Student_Level_Code, s.Frzn_Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
                                                               m.Short_Desc as Mjr_Short_Desc, m.Coll_Code, m.Dept_Code,
                                         m.Long_Desc as Mjr_Long_Desc, d.Short_Name as Dept_Short_Name, d.Full_Name as Dept_Full_Name,
                                  c.Short_Name as Coll_Short_Name, c.Full_Name as Coll_Full_Name
-                                                           from SISFull.dbo.SISPLVT s
+                                                           from ",ds,".dbo.MSUPLVT_",ex," s
                                                            inner join SISInfo.dbo.MAJORMNT m
                                                            on s.Primary_Major_Code=m.Major_Code
                                                            inner join SISInfo.dbo.DEPT d 
@@ -211,52 +251,49 @@ mjrclass_pull <- function(ds='SISFull', pidlist){
                                                            where s.Pid in (", pidchar, ")  and  s.Primary_Lvl_Flag='Y' and 
                                                            s.System_Rgstn_Status in ('C','R','E','W')
                                                            ")
-                                          
-                )
-                
-                dat1 <- rbind(dat1, dat)
-                
+                                                  
+                        )
+                        
+                        dat1 <- rbind(dat1, dat)
+                        
+                }  
         }
+        else {
+                dat1 <- data.frame()
+                for (i in seq(lsg)){
+                        pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+                        dat<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct s.Pid, s.Student_Level_Code, s.Term_Seq_Id, s.Class_Code, s.First_Term_At_Lvl, s.Primary_Major_Code,
+                                                              m.Short_Desc as Mjr_Short_Desc, m.Coll_Code, m.Dept_Code,
+                                        m.Long_Desc as Mjr_Long_Desc, d.Short_Name as Dept_Short_Name, d.Full_Name as Dept_Full_Name,
+                                 c.Short_Name as Coll_Short_Name, c.Full_Name as Coll_Full_Name
+                                                           from ",ds,".dbo.SISPLVT s
+                                                           inner join SISInfo.dbo.MAJORMNT m
+                                                           on s.Primary_Major_Code=m.Major_Code
+                                                           inner join SISInfo.dbo.DEPT d 
+                                                           on m.Dept_Code=d.Dept_Code and m.Coll_Code=d.Coll_Code
+                                                           inner join SISInfo.dbo.COLLEGE c 
+                                                           on c.Coll_Code=m.Coll_Code
+                                                           where s.Pid in (", pidchar, ")  and  s.Primary_Lvl_Flag='Y' and 
+                                                           s.System_Rgstn_Status in ('C','R','E','W')
+                                                           ")
+                                                  
+                        )
+                        
+                        dat1 <- rbind(dat1, dat)
+                        
+                }  
+        }
+        
         dat1
 }
 
-
-
-#' firstgen_add is a function to add students with the first generation status to the dataframe provided
-#' 
-#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
-#' @param maindat A dataframe with identifer as either Pid or PID
-#' 
-#' @return this function add another column FGEN to the original dataframe to indicate first gen status
-#' 
-#' @examples 
-#' \dontrun{firstgen_add(ds='SISFull', maindat=PAG)}
-#' 
-#' @export
-firstgen_add <- function(ds='SISFull', maindat){
-        if(! exists('MSUDATA') )
-                stop("You need to connect to msudata first using msudatacon")
-        if (sum(names(maindat)=='PID')>0){
-                pidlist <- maindat$PID
-                firstgends <- firstgen_pull(pidlist=pidlist)
-               dat<- merge(maindat, firstgends, by.x = 'PID', by.y = 'Pid', all.x = T) 
-        }
-        else if (sum(names(maindat)=='Pid')>0){
-                pidlist <- maindat$Pid
-                firstgends <- firstgen_pull(pidlist=pidlist)
-              dat<-  merge(maindat, firstgends, by.x = 'Pid', by.y = 'Pid', all.x = T) 
-        }
-        
-        dat$FGEN <- ifelse(is.na(dat$FGEN), 'N','Y')
-        dat
-        
-}
-
-#' FA_pull is a function to get Pell, FAFSA 1st Gen, and other FA related Info by Pid 
+#' Financial Aid Related Info
+#'
+#' FA_pull is a function to get Pell grant, FAFSA 1st Gen, and other FA related Info by Pid and AidYr 
 #' 
 #' @param pidlist a character vectors of Pids
 #' 
-#' @return a data frame with Pid, entry cohort, and FA info
+#' @return a data frame with Pid, entry cohort, and FA info by AidYr. Note: FA in PAG after 2000
 #' 
 #' @importFrom dplyr filter
 #' @importFrom dplyr mutate
@@ -456,13 +493,15 @@ FA_pull <- function(pidlist){
                             First_Gen_FA_1st_Yr= ifelse(is.na(First_Gen_1st) | First_Gen_1st %in% c('X','Z'), 'U', First_Gen_1st))
 }
 
-#' gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids provided
+#' Gender and Race Ethnicity
+#'
+#' gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids 
 #' 
 #' @param ds A character string to indicate the SIS source : SISFull or SISInfo or SISFrzn
 #' @param pidlist A character vector of Pids
 #' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
 #' 
-#' @return A data frame with Pids, Gender, Ethnicity and Ctzn Code
+#' @return A data frame with Pids, Gender, Ethnicity and Ctzn Code. If ds is SISFrzn, the status is by term
 #' 
 #' @export
 gndr_race_pull <- function(ds='SISFull', pidlist,ex="QRTRTERM"){
@@ -521,11 +560,13 @@ gndr_race_pull <- function(ds='SISFull', pidlist,ex="QRTRTERM"){
         dat
 }
 
+#' Preliminary Undergrad Persistence Rate
+#'
 #' Preliminary.PFS2 is a function to get the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFrzn extracts
 #' 
 #' @param cohortex a character string to indicate the fall entering cohort was built from which flavor of the SISFrzn extract,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
 #' @param subenrlex a character string to indicate the subsequent enroll and Award population was pulled from which flavor of the SISFrzn extract,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
-#' @param cohortterm a numeric vector to indicate the fall entering cohort 1st Fall term,e.g 1144
+#' @param cohortterm a numeric vector to indicate the fall entering cohort 1st Fall term e.g 1144
 #' @param output indicate the output format, aggregate or list
 #' 
 #' @return aggregate output returns the persistence rate by entering cohort and lvl entry status. list returns the detail data frame
@@ -534,6 +575,7 @@ gndr_race_pull <- function(ds='SISFull', pidlist,ex="QRTRTERM"){
 #' @importFrom dplyr mutate
 #' @importFrom dplyr group_by
 #' @importFrom dplyr summarise
+#' @importFrom dplyr ungroup
 #' @importFrom magrittr "%>%"
 #' 
 #' @export
@@ -562,7 +604,11 @@ Preliminary.PFS2 <- function(cohortex='QRTRTERM', subenrlex='FIRSTDAY', cohortte
                                               from SISFrzn.dbo.SISPAWD_",subenrlex," as PAWD
                                               inner join SISInfo.dbo.Term as t
                                               on PAWD.Intended_Award_Term=t.Term_Code
-                                              where PAWD.Award_Stat_Code in ('CONF','RECM') and PAWD.Student_Level_Code='UN'
+                                              inner join SISInfo.dbo.MAJORMNT m 
+                                              on PAWD.Major_Code=m.Major_Code
+                                              inner join SISInfo.dbo.AWRDTYPE w
+                                               on w.Degree_Type_Code=m.Award_Type
+                                              where PAWD.Award_Stat_Code in ('CONF','RECM') and PAWD.Student_Level_Code='UN' and w.Prog_Purpose='2.4'
                                               ) c
                                               on a.Pid=c.Pid and a.Frzn_Term_Seq_Id<=c.Int_Grad_TermId
                                               left join 
@@ -590,14 +636,16 @@ Preliminary.PFS2 <- function(cohortex='QRTRTERM', subenrlex='FIRSTDAY', cohortte
               cohort%>% group_by(Frzn_Term_Seq_Id, Lvl_Entry_Status)%>% summarise(HC=n_distinct(Pid), PSS1=mean(PSS1)*100, PFS2= mean(PFS2)*100)%>% ungroup()
       }  
      else if (output=='list'){
-             cohort
+             as.data.frame(cohort)
      }
         
 }
 
+#' Undergrad Persistence Rate SISFull
+#' 
 #' Full.PFS2 is a function to get the 1st Spring and 2nd Fall persistence for undergraduate fall entering cohort including summer starters from SISFull
 #' 
-#' @param cohortterm a numeric vector to indicate the fall entering cohort 1st Fall term,e.g 1144
+#' @param cohortterm a numeric vector to indicate the fall entering cohort 1st Fall term e.g 1144
 #' @param output indicate the output format, aggregate or list
 #' 
 #' @return aggregate output returns the persistence rate by entering cohort and lvl entry status. list returns the detail data frame
@@ -606,6 +654,7 @@ Preliminary.PFS2 <- function(cohortex='QRTRTERM', subenrlex='FIRSTDAY', cohortte
 #' @importFrom dplyr mutate
 #' @importFrom dplyr group_by
 #' @importFrom dplyr summarise
+#' @importFrom dplyr ungroup
 #' @importFrom magrittr "%>%"
 #' 
 #' @export
@@ -633,7 +682,11 @@ Full.PFS2 <- function(cohortterm, output="aggregate"){
                                               from SISFull.dbo.SISPAWD as PAWD
                                               inner join SISInfo.dbo.Term as t
                                               on PAWD.Intended_Award_Term=t.Term_Code
-                                              where PAWD.Award_Stat_Code in ('CONF','RECM') and PAWD.Student_Level_Code='UN'
+                                              inner join SISInfo.dbo.MAJORMNT m 
+                                              on PAWD.Major_Code=m.Major_Code
+                                              inner join SISInfo.dbo.AWRDTYPE w
+                                               on w.Degree_Type_Code=m.Award_Type
+                                              where PAWD.Award_Stat_Code in ('CONF','RECM') and PAWD.Student_Level_Code='UN' and w.Prog_Purpose='2.4'
                                               ) c
                                               on a.Pid=c.Pid and a.Term_Seq_Id<=c.Int_Grad_TermId
                                               left join 
@@ -656,18 +709,19 @@ Full.PFS2 <- function(cohortterm, output="aggregate"){
                 mutate(PFS2= ifelse(AwdbyFS2==1 | enrlFS2==1,1,0),
                        PSS1= ifelse(AwdbySS1==1 | enrlSS1==1,1,0))
         if (output=='aggregate'){  
-          cohort%>% group_by(Term_Seq_Id, Lvl_Entry_Status)%>% summarise(HC=n_distinct(Pid), PSS1= mean(PSS1)*100,PFS2= mean(PFS2)*100)
+          cohort%>% group_by(Term_Seq_Id, Lvl_Entry_Status)%>% summarise(HC=n_distinct(Pid), PSS1= mean(PSS1)*100,PFS2= mean(PFS2)*100)%>%ungroup()
         }
         else if (output=='list'){
-                cohort
+               as.data.frame( cohort)
         }
         
 }
 
-
-#' pregpa_pull is a function to pull MSU calculated GPA from SISFull
+#' MSU Calcuated GPA 
+#'
+#' pregpa_pull is a function to pull MSU calculated GPA from SISFull or SISInfo
 #' 
-#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param ds A character string to indicate the SIS source SISFull or SISInfo
 #' @param pidlist A character vector of Pids
 #' 
 #' @return A data frame with Pids, max value of predGPA if multiple. give null if hsgpa is zero
@@ -700,9 +754,11 @@ pregpa_pull<- function(ds='SISFull', pidlist){
         
 }
 
+#' First WRA course and Grade
+#'
 #' firstATL_pull is a function to pull First ATL Course and Grade
 #' 
-#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param ds A character string to indicate the SIS source  SISFull or SISInfo
 #' @param pidlist A character vector of Pids
 #' 
 #' @return A data frame with Pids, Term_Seq_Id when first ATL was taken, 1st ATL and Grade
@@ -718,6 +774,8 @@ pregpa_pull<- function(ds='SISFull', pidlist){
 firstATL_pull <- function(ds='SISFull', pidlist){
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISInfo','SISFull'))
+                stop("ds must be specificed as SISInfo or SISFull")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -744,9 +802,11 @@ firstATL_pull <- function(ds='SISFull', pidlist){
         as.data.frame(dat)
 }
 
+#' First Term GPA
+#'
 #' firsttermgpa_pull is a function to pull First Term GPA by student level
 #' 
-#' @param ds A character string to indicate the SIS source : SISFull or SISInfo
+#' @param ds A character string to indicate the SIS source  SISFull or SISInfo
 #' @param pidlist A character vector of Pids
 #' 
 #' @return A data frame with Pids, student_level,first_term_seq_id, termGPA, firstterm GPA credits
@@ -763,6 +823,8 @@ firstATL_pull <- function(ds='SISFull', pidlist){
 firsttermgpa_pull <- function(ds='SISFull', pidlist){
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
+        if (! ds %in% c('SISInfo','SISFull'))
+                stop("ds must be specificed as SISInfo or SISFull")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -790,11 +852,13 @@ firsttermgpa_pull <- function(ds='SISFull', pidlist){
         as.data.frame(dat)
 }
 
-#' indicator_pull is a function to pull indicator and atrisk for undergrads and AT from SISFull
+#' Performance Indicator
+#'
+#' indicator_pull is a function to pull indicator and atrisk for UN and AT from SISFull
 #' 
 #' @param pidlist A character vector of Pids
 #' 
-#' @return A data frame with Pids, indicator,atrisk,FirsttermGPA, student_level, pred_GPA, 1stATL
+#' @return A data frame with Pids indicator atrisk FirsttermGPA student_level pred_GPA 1stATL
 #' 
 #' @importFrom dplyr mutate
 #' @importFrom magrittr "%>%"
@@ -807,7 +871,7 @@ indicator_pull <- function( pidlist){
         gpa1st<-firsttermgpa_pull(pidlist = pidlist)
         dat <- merge(dat, gpa1st, by='Pid', all.x = T)
         ATL1st <- firstATL_pull(pidlist = pidlist)
-         merge(dat, ATL1st, by='Pid', all.x = T) %>% mutate(indicator= ifelse(Student_Level_Code %in% c('UN','AT'), 4,NA),
+         merge(dat, ATL1st, by='Pid', all.x = T) %>% filter(Student_Level_Code %in% c('UN','AT'))%>% mutate(indicator= ifelse(Student_Level_Code %in% c('UN','AT'), 4,NA),
                                                                  indicator=ifelse(! is.na(indicator) & FirsttermGPA>=2.5 & ! is.na(FirsttermGPA), indicator+1, indicator),
                                                                  indicator=ifelse(! is.na(indicator) & FirsttermGPA<1.6 & ! is.na(FirsttermGPA), indicator-1, indicator),
                                                                  indicator=ifelse(! is.na(indicator) & Grade_Code %in% c('3.0','3.5','4.0') & ! is.na(Grade_Code), indicator+1, indicator),
@@ -819,10 +883,11 @@ indicator_pull <- function( pidlist){
                                                                                       (Grade_Code %in% c('0.5', '1.0', '1.5','0.0') & ! is.na(Grade_Code)) ),'Y', atrisk))
 }
 
-
+#' Residence Adress Country State County
+#'
 #' rsadress_pull is a function to pull the residence address from prsn default ds shows address in entry term
 #' 
-#' @param ds A character string to indicate the SIS source : SISFrzn or SISFull or SISInfo
+#' @param ds A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo
 #' @param pidlist A character vector of Pids
 #' 
 #' @return A data frame with Pids, student_level_code and entry Term residence address country county state
@@ -831,11 +896,13 @@ indicator_pull <- function( pidlist){
 #' @importFrom magrittr "%>%"
 #'  
 #' @export
-rsadress_pull <- function(ds='SISFrzn', pidlist){
+rsadress_pull <- function(ds='SISFrzn', ex="QRTRTERM" ,pidlist){
         if(! exists('MSUDATA') )
                 stop("You need to connect to msudata first using msudatacon")
         if (! ds %in% c('SISFrzn','SISInfo','SISFull'))
                 stop("ds must be specificed as SISFrzn, SISInfo or SISFull")
+        if (! ex %in% c('QRTRTERM','FIRSTDAY','ENDTERM') )
+                stop("ex value must be within 'QRTRTERM','FIRSTDAY','ENDTERM'")
         ls <- length(pidlist)
         lsg <- ceiling( ls/1000)
         pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
@@ -847,7 +914,7 @@ rsadress_pull <- function(ds='SISFrzn', pidlist){
                         dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct p.Pid, p.Frzn_Term_Seq_Id as Entry_Term_Seq_Id,p.ADR_CNTRY_CODE ,c.Full_Name as ADR_CNTRY_NM ,   
                                                                     p.ADR_CNTY_CODE ,d.Full_Name as ADR_CNTY_NM,
                                                                     p.Adr_State_Code , e.Full_Name as ADR_State_NM 
-                                                                    from ", ds,".dbo.SISPRSN_QRTRTERM p
+                                                                    from ", ds,".dbo.SISPRSN_",ex," p
                                                                     left join SISInfo.dbo.COUNTRY c
                                                                     on p.Adr_Cntry_Code=c.Cntry_Code
                                                                     left join SISInfo.dbo.COUNTY d
@@ -890,10 +957,11 @@ rsadress_pull <- function(ds='SISFrzn', pidlist){
    
 }
 
-
+#' Term Enrollment Student List
+#'
 #' term.enroll is a function to get enrollment unit record data including official Frzn enrollment  
 #' 
-#' @param ds A character string to indicate the SIS source : SISFrzn or SISFull or SISInfo
+#' @param ds A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo
 #' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
 #' @param termid a numeric vector to specify which term or terms to pull data from
 #' 

@@ -2,12 +2,12 @@
 % Please edit documentation in R/pulldata.R
 \name{term.enroll}
 \alias{term.enroll}
-\title{term.enroll is a function to get enrollment unit record data including official Frzn enrollment}
+\title{Term Enrollment Student List}
 \usage{
 term.enroll(ds = "SISFrzn", ex = "QRTRTERM", termid)
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFrzn or SISFull or SISInfo}
+\item{ds}{A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo}
 
 \item{ex}{a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
 

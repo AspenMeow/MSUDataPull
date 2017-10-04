@@ -2,12 +2,12 @@
 % Please edit documentation in R/pulldata.R
 \name{rsadress_pull}
 \alias{rsadress_pull}
-\title{rsadress_pull is a function to pull the residence address from prsn default ds shows address in entry term}
+\title{Residence Adress Country State County}
 \usage{
-rsadress_pull(ds = "SISFrzn", pidlist)
+rsadress_pull(ds = "SISFrzn", ex = "QRTRTERM", pidlist)
 }
 \arguments{
-\item{ds}{A character string to indicate the SIS source : SISFrzn or SISFull or SISInfo}
+\item{ds}{A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo}
 
 \item{pidlist}{A character vector of Pids}
 }

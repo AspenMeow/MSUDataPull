@@ -2,7 +2,7 @@
 % Please edit documentation in R/pulldata.R
 \name{gndr_race_pull}
 \alias{gndr_race_pull}
-\title{gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids provided}
+\title{Gender and Race Ethnicity}
 \usage{
 gndr_race_pull(ds = "SISFull", pidlist, ex = "QRTRTERM")
 }
@@ -14,8 +14,8 @@ gndr_race_pull(ds = "SISFull", pidlist, ex = "QRTRTERM")
 \item{ex}{a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
 }
 \value{
-A data frame with Pids, Gender, Ethnicity and Ctzn Code
+A data frame with Pids, Gender, Ethnicity and Ctzn Code. If ds is SISFrzn, the status is by term
 }
 \description{
-gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids provided
+gndr_race_pull is a function to provide gender, IPEDS ethnicity for the Pids
 }
