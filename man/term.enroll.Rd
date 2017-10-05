@@ -11,7 +11,7 @@ term.enroll(ds = "SISFrzn", ex = "QRTRTERM", termid)
 
 \item{ex}{a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
 
-\item{termid}{a numeric vector to specify which term or terms to pull data from}
+\item{termid}{a numeric vector to specify which term or terms to pull the data from}
 }
 \value{
 A data frame with enrolled Pids and term related info

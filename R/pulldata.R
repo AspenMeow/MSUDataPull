@@ -963,7 +963,7 @@ rsadress_pull <- function(ds='SISFrzn', ex="QRTRTERM" ,pidlist){
 #' 
 #' @param ds A character string to indicate the SIS source  SISFrzn or SISFull or SISInfo
 #' @param ex a character string to indicate which flavor of the SISFrzn extract to use,value can only be within QRTRTERM,FIRSTDAY,ENDTERM
-#' @param termid a numeric vector to specify which term or terms to pull data from
+#' @param termid a numeric vector to specify which term or terms to pull the data from
 #' 
 #' @return A data frame with enrolled Pids and term related info
 #' 
@@ -993,7 +993,7 @@ term.enroll <- function(ds='SISFrzn',  ex="QRTRTERM", termid){
                                                                    left join SISInfo.dbo.IPEDS i 
                                                                    on e.Ipeds_Flag=i.IPEDS_Flag
                                                                     where   a.System_Rgstn_Status in ('C','R','E','W') and a.student_level_code not in ('HG', 'HU', 'TE')
-                                                                      and a.Primary_Lvl_Flag='Y' and a.Frzn_Term_Seq_Id in (",termid,")
+                                                                      and a.Primary_Lvl_Flag='Y' and a.Frzn_Term_Seq_Id in (",paste(termid, collapse = ","),")
                                                                     ")
                                                    
                         )
@@ -1005,7 +1005,7 @@ term.enroll <- function(ds='SISFrzn',  ex="QRTRTERM", termid){
                 dat1<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select distinct Pid, Term_Seq_Id, Term_Code, Student_Level_Code,Time_Status, Class_Code, Hegis_Cohort_New,Lvl_Entry_Status
                                                                       from ",ds,".dbo.SISPLVT   
                                                                     where   System_Rgstn_Status in ('C','R','E','W') and student_level_code not in ('HG', 'HU', 'TE')
-                                                                      and Primary_Lvl_Flag='Y' and Term_Seq_Id in (",termid,")
+                                                                      and Primary_Lvl_Flag='Y' and Term_Seq_Id in (",paste(termid, collapse = ","),")
                                                                     ")
                 )
                 gndr <- gndr_race_pull(ds=ds, pidlist = unique(dat1$Pid))
