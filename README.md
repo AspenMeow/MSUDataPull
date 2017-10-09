@@ -2,12 +2,12 @@
 
 msudatapull is an R package with a collection of functions that perform the data querying and processing on the flyer. The functions are designed to allow users to pass a list of pids or a dataframe to get back the values of the derived fields such as finanical aid, first gen, etc.
 
-#### 1.Installation
+#### 1.Installation Alternative from MSUgitlab
 
-To install this package from github please first install and load the devtools package
+To install this package from MSUGitLab, first clone the entire repository to local machine using git clone command then install from the local copy by specifying where the local copy reside
 
 ``` r
-devtools::install_github("chendi1020/msudatapull")
+devtools::install("filedirectory/msudatapull")
 ```
 
 #### 2.Load Package to the enviroment
