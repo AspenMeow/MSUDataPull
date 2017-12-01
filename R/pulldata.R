@@ -519,7 +519,8 @@ gndr_race_pull <- function(ds='SISFull', pidlist,ex="QRTRTERM"){
                 dat <- data.frame()
                 for (i in seq(lsg)){
                         pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
-                        dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,p.Frzn_Term_Seq_Id,
+                        dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,
+                                                                 p.Frzn_Term_Seq_Id,p.Adr_State_Code,p.Adr_Cnty_Code,p.Adr_Cntry_Code,
                                                                    (case when p.Ctzn_Code = 'NOTC' then 'International' 
                                                                    when e.Ipeds_Flag in ('10','11','6') then 'Asian/Hawaii/PI'
                                                                    else i.Short_Desc end) as Ethnicity
@@ -540,6 +541,7 @@ gndr_race_pull <- function(ds='SISFull', pidlist,ex="QRTRTERM"){
                 for (i in seq(lsg)){
                         pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
                         dat1 <- RJDBC::dbGetQuery(MSUDATA,  paste0("select distinct p.Pid, p.Gndr_Flag, e.Ipeds_Flag,p.Ctzn_Code,
+                                                      p.Adr_State_Code,p.Adr_Cnty_Code,p.Adr_Cntry_Code,
                                                     (case when p.Ctzn_Code = 'NOTC' then 'International' 
                                                           when e.Ipeds_Flag in ('10','11','6') then 'Asian/Hawaii/PI'
                                                         else i.Short_Desc end) as Ethnicity
@@ -788,7 +790,7 @@ firstATL_pull <- function(ds='SISFull', pidlist){
                            where    Primary_Lvl_Flag='Y'
                     and ((Subj_Code in ('ATL','WRA') and left(Crse_Code,1) in ('1', 'Q1')) or 
                     (Subj_Code = 'MC' and Crse_Code in ('111','Q111', '112')) or 
-                   (Subj_Code = 'LBS' and Crse_Code in ('133')) or
+                   (Subj_Code in ( 'LBS','LB') and Crse_Code in ('133')) or
                    (Subj_Code = 'AL' and Crse_Code in ('192','192H'))) and  Pid in (
                                                     ", pidchar,") 
                                                      ", sep=""
