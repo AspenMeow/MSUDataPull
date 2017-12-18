@@ -25,6 +25,12 @@ Sys.getenv("JAVA_HOME")
 Sys.getenv("R_ARCH")
 ```
 
+-   Step up your JAVA home
+
+``` r
+Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_144')
+```
+
 -   [check if jvm.dll is in your windows PATH variable](https://stackoverflow.com/questions/7019912/using-the-rjava-package-on-win7-64-bit-with-r)
 
 #### 2.Load Package to the enviroment
