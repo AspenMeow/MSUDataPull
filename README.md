@@ -10,6 +10,21 @@ To install this package from MSUGitLab, first clone the entire repository to loc
 devtools::install("filedirectory/msudatapull")
 ```
 
+Note: to successfully install the package: + check the installation and load of devtool package
+
+``` r
+if(! 'devtools ' %in% installed.packages()){install.packages('devtools')}
+```
+
+-   check your JAVA home and R version, 64 bit on both
+
+``` r
+Sys.getenv("JAVA_HOME")
+Sys.getenv("R_ARCH")
+```
+
+-   [check if jvm.dll is in your windows PATH variable](https://stackoverflow.com/questions/7019912/using-the-rjava-package-on-win7-64-bit-with-r)
+
 #### 2.Load Package to the enviroment
 
 ``` r
