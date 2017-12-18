@@ -10,7 +10,9 @@ To install this package from MSUGitLab, first clone the entire repository to loc
 devtools::install("filedirectory/msudatapull")
 ```
 
-Note: to successfully install the package: + check the installation and load of devtool package
+Note: to successfully install the package:
+
+-   check the installation and load of devtool package
 
 ``` r
 if(! 'devtools ' %in% installed.packages()){install.packages('devtools')}

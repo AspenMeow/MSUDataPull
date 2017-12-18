@@ -23,7 +23,9 @@ devtools::install("filedirectory/msudatapull")
 ```
 
 Note: to successfully install the package:
+
 + check the installation and load of devtool package
+
 ```{r, results='hide', eval=FALSE}
 if(! 'devtools ' %in% installed.packages()){install.packages('devtools')}
 ```
