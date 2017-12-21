@@ -15,11 +15,13 @@ knitr::opts_chunk$set(echo = TRUE)
 msudatapull is an R package with a collection of functions that perform the data querying and processing on the flyer. The functions are designed to allow users to pass a list of pids or a dataframe to get back the values of the derived fields such as finanical aid, first gen, etc.
 
 
-#### 1.Installation Alternative from MSUgitlab
-To install this package from MSUGitLab, first clone the entire repository to local machine using git clone command
-then install from the local copy by specifying where the local copy reside
+#### 1.Installation from MSUgitlab
+
 ```{r, results='hide', eval=FALSE}
-devtools::install("filedirectory/msudatapull")
+devtools::install_git(
+  "https://chendi4@gitlab.msu.edu/chendi4/msudatapull.git", 
+  credentials = git2r::cred_user_pass("chendi4", "your git lab password")
+)
 ```
 
 Note: to successfully install the package:
@@ -45,6 +47,8 @@ Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_144')
 
 + [check if jvm.dll is in your windows PATH variable ](https://stackoverflow.com/questions/7019912/using-the-rjava-package-on-win7-64-bit-with-r) 
 
+
+##### Alternatively, clone the repository to your local directory using git and install from your local directory
 
 #### 2.Load Package to the enviroment
 ```{r, results='hide', eval=FALSE}
