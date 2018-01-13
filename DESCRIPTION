@@ -10,7 +10,11 @@ LazyData: true
 Imports:
     rJava,
 	DBI,
-	tidyverse,
+	assertthat,
+	Rcpp,
+	tibble,
+	plyr,
+	stringi,
     RJDBC,
     dplyr,
     magrittr,
