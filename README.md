@@ -7,7 +7,7 @@ msudatapull is an R package with a collection of functions that perform the data
 ``` r
 devtools::install_git(
   "https://chendi4@gitlab.msu.edu/chendi4/msudatapull.git", 
-  credentials = git2r::cred_user_pass("chendi4", "your git lab password")
+  credentials = git2r::cred_user_pass("chendi4", .rs.askForPassword("Your Gitlab Password:"))
 )
 ```
 
@@ -26,13 +26,13 @@ Sys.getenv("JAVA_HOME")
 Sys.getenv("R_ARCH")
 ```
 
--   Step up your JAVA home
+-   Step up your PATH varaible and JAVA home to locate jvm.dll [check if jvm.dll is in your windows PATH variable](https://stackoverflow.com/questions/7019912/using-the-rjava-package-on-win7-64-bit-with-r)
+
+setting JAVA home in R
 
 ``` r
 Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_144')
 ```
-
--   [check if jvm.dll is in your windows PATH variable](https://stackoverflow.com/questions/7019912/using-the-rjava-package-on-win7-64-bit-with-r)
 
 ##### Alternatively, clone the repository to your local directory using git and install from your local directory
 
