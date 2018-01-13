@@ -15,6 +15,7 @@ Imports:
 	tibble,
 	plyr,
 	stringr,
+	stringi,
     RJDBC,
     dplyr,
     magrittr,
