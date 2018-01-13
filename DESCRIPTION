@@ -14,7 +14,7 @@ Imports:
 	Rcpp,
 	tibble,
 	plyr,
-	stringi,
+	stringr,
     RJDBC,
     dplyr,
     magrittr,
