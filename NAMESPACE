@@ -3,6 +3,7 @@
 export(FA_pull)
 export(Full.PFS2)
 export(Preliminary.PFS2)
+export(admt.coll)
 export(cohort)
 export(firstATL_pull)
 export(firstgen_pull)

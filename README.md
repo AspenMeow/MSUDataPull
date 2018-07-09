@@ -31,7 +31,7 @@ Sys.getenv("R_ARCH")
 setting JAVA home in R
 
 ``` r
-Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre1.8.0_144')
+Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre7')
 ```
 
 ##### Alternatively, clone the repository to your local directory using git and install from your local directory
@@ -74,3 +74,4 @@ msudatacon(userid = "chendi4")
 -   **indicator\_pull** provide indicator values on scale from 1-7 for the population specified (null for level other than AT and UN)
 -   **rsadress\_pull** provide residence address country, state, county from SISPRSN for the population specified. If SISFrzn used, it uses qtrterm extract to get the status as entry term.
 -   **term.enroll** provide unit record data on term enrollment including the official enrollment if specifying SISFrzn
+-   **adm.coll** provide all majors associated with undergraduates and whether major has been admitted to college or not based on SISFull

@@ -1018,3 +1018,73 @@ term.enroll <- function(ds='SISFrzn',  ex="QRTRTERM", termid){
         
         
 }
+
+
+#' Major admit to college
+#'
+#' admt.coll is a function to pull undergraduates all majors by term and major college from SISFull, and indicate whether major is admitted to college or not  
+#' 
+#' @param termid default is All to pull all available terms from SISFUll or a character vector to specify term to pull the major from
+#' 
+#' @return A data frame with enrolled Pids and major by term and admit to college status
+#' 
+#' @export
+admt.coll <- function(pidlist, termid="All"){
+  if(! exists('MSUDATA') )
+    stop("You need to connect to msudata first using msudatacon")
+
+  
+  ls <- length(pidlist)
+  lsg <- ceiling( ls/1000)
+  pidp <- split(pidlist, ceiling(seq_along(pidlist)/1000))
+  
+  dat <- data.frame()
+  for (i in seq(lsg)){
+    pidchar<-paste(shQuote(pidp[[i]], type="csh"), collapse=", ")
+    PAPL<-   RJDBC::dbGetQuery(MSUDATA, paste0( "select a.Pid,  a.Major_Code,a.Coll_Aplcn_Dcsn_Code, a.Coll_Efctv_Term_code,
+                        t.Term_Seq_Id as CollEfctvTermId, a.Aplcn_End_Term_Code, t1.Term_Seq_Id as AplcnEndTermId,a.Student_Level_Code,
+                                                a.Admit_Term_Code, m.coll_code, m.Long_Desc as mjr_desc, c.Full_Name as mjr_coll_name
+                                                FROM SISFull.dbo.SISPAPL a
+                                                inner join SISInfo.dbo.TERM t
+                                                on a.Coll_Efctv_Term_code=t.Term_Code
+                                                left join SISInfo.dbo.TERM t1
+                                                on a.Aplcn_End_Term_Code=t1.Term_Code
+                                                inner join SISInfo.dbo.MAJORMNT m
+                                                on a.Major_Code=m.Major_Code 
+                                                inner join SISInfo.dbo.College c 
+                                                on m.Coll_Code = c.Coll_Code
+                                                where Coll_Aplcn_Dcsn_Code = 'ADMT' 
+                                                and a.Pid in (
+                                                ",pidchar,") " ,sep="")
+                               
+    )
+    PAPL <- PAPL %>% mutate(AplcnEndTermId = ifelse(is.na(AplcnEndTermId),9999, AplcnEndTermId))
+    SISPMJR <- RJDBC::dbGetQuery(MSUDATA, paste0( "select p.*, m.Long_Desc as mjr_desc, c.coll_code, c.Full_Name as mjr_coll_name
+                      from SISFull.dbo.SISPMJR p 
+                       left join SISInfo.dbo.MAJORMNT m
+                    on p.Major_Code=m.Major_Code 
+                      left join SISInfo.dbo.College c 
+                      on m.Coll_Code = c.Coll_Code
+                      where Student_Level_Code='UN' and p.Pid in (
+                      
+                      ",pidchar,")" , sep=""))
+    
+    if (termid !='All'){
+      SISPMJR <- SISPMJR %>% filter(Term_Seq_Id %in% termid)
+    }
+    
+    dat1 <- SISPMJR %>% left_join(PAPL[,c('Pid','Major_Code','CollEfctvTermId','AplcnEndTermId','Coll_Aplcn_Dcsn_Code')], by=c('Pid','Major_Code'))%>%
+      mutate(AdmitColl= ifelse(is.na(Coll_Aplcn_Dcsn_Code), 0,
+                               ifelse(Term_Seq_Id>= CollEfctvTermId & Term_Seq_Id<=AplcnEndTermId,1,0 )))%>%
+      group_by(Pid, Term_Seq_Id, Major_Code, Aplcn_Ref_Num)%>% mutate(maxad = max(AdmitColl))%>% ungroup()%>%  filter(maxad== AdmitColl)%>%
+      select(-c(CollEfctvTermId,AplcnEndTermId,Time_Stamp))%>% unique()
+    
+    dat <- rbind(dat, dat1)
+  }
+  dat
+    
+  
+  
+}
+
+
