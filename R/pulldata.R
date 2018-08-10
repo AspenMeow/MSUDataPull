@@ -103,7 +103,7 @@ cohort <- function(ds='SISFull', ex='QRTRTERM',pidlist){
         }
                
                 dat1$COHORT<- ifelse(as.numeric( dat1$ch) >=68, 1900+ as.numeric( dat1$ch), 2000+as.numeric( dat1$ch) )
-                dat1$ENTRANT_SUMMER_FALL <- ifelse(dat1$Trm == 'F' | (dat1$Trm=='U' & dat1$SuTrm=='Y'), 'Y', 'N')
+                dat1$ENTRANT_SUMMER_FALL <- ifelse( dat1$Trm=='U' & dat1$SuTrm=='Y', 'Y', 'N')
                 dat1$AidYr <- ifelse(dat1$Trm=='U', dat1$COHORT, dat1$COHORT+1)
                 dat1[,c('Pid','COHORT', 'ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','AidYr','Student_Level_Code')]
         

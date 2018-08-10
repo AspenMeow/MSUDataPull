@@ -4,8 +4,8 @@
 \alias{Preliminary.PFS2}
 \title{Preliminary Undergrad Persistence Rate}
 \usage{
-Preliminary.PFS2(cohortex = "QRTRTERM", subenrlex = "FIRSTDAY", cohortterm,
-  output = "aggregate")
+Preliminary.PFS2(cohortex = "QRTRTERM", subenrlex = "FIRSTDAY",
+  cohortterm, output = "aggregate")
 }
 \arguments{
 \item{cohortex}{a character string to indicate the fall entering cohort was built from which flavor of the SISFrzn extract,value can only be within QRTRTERM,FIRSTDAY,ENDTERM}
