@@ -475,12 +475,12 @@ FA_pull <- function(pidlist){
                                                                           Unsub_Stafford+Perkins+Parent_PLUS+Other_Student_Loans+Work_Study)>= Need, 'Y','N')),
                        Need_Met_wNBFA= ifelse(Need<=0, 'N', ifelse((Pell+SEOG+MSU_General_Fund_Grants+Other_Grants+Sub_Stafford+Perkins+
                                                                             Work_Study)>= Need,'Y','N')))
-        
+        FA$AidYr  <- as.numeric(FA$AidYr)
         pidtb <- cohort(pidlist = pidlist)
         #within 1st Aidyr
         pidtb1st <- merge(pidtb, FA, by=c('Pid','AidYr'), all.x = T)
-        names(pidtb1st)[! names(pidtb1st) %in% c('Pid','COHORT','AidYr','ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code')] <-
-                paste0(names(pidtb1st)[! names(pidtb1st) %in% c('Pid','COHORT','AidYr','ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code')], '_1st', sep="")
+        names(pidtb1st)[! names(pidtb1st) %in% c('Pid','COHORT','AidYr','ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','Student_Level_Code')] <-
+            paste0(names(pidtb1st)[! names(pidtb1st) %in% c('Pid','COHORT','AidYr','ENTRANT_SUMMER_FALL','Entry_Term_Seq_Id','Entry_Term_Code','Student_Level_Code')], '_1st', sep="")
         
         #any year
         pidtb <- merge(pidtb, FA, by='Pid')
