@@ -448,6 +448,8 @@ FA_pull <- function(pidlist){
         FA <- FA  %>%filter(! is.na(DepStf) & DepStf != ' ' )%>% mutate(Budget= ifelse(! is.na(Aa), SBudget, NA),
                             EFC= ifelse( ! is.na(Aa), Efc, NA ),
                             Need= ifelse(is.na(Aa), NA, ifelse(SBudget-Efc<0, 0,SBudget-Efc ) ),
+                            AidId= trimws(AidId),
+                            TypeAid= trimws(TypeAid),
                             Pell= ifelse(TypeAid=='E', TotPaid, 0),
                             SEOG= ifelse(grepl('^SEOG', AidId) | grepl('^TSEG', AidId) | grepl('^USEG', AidId) | grepl('^YSEG', AidId), TotPaid,0 ),
                             MSU_General_Fund_Grants= ifelse(TypeAid %in% c('G','F','S','P') & grepl('^11', ActNr), TotPaid,0 ),
