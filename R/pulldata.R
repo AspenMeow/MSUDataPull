@@ -12,7 +12,7 @@
 #' @export
 msudatacon <- function(userid){
         psswd <- .rs.askForPassword("MSUDATA Database Password:")
-        drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","S:/Utilities/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar") 
+        drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","O:/Apps/Microsoft SQL Server/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar") 
         MSUDATA <<- RJDBC::dbConnect(drv, "jdbc:sqlserver://msudata.ais.msu.edu", userid,psswd)
 }
 

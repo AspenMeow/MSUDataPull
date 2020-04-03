@@ -35,6 +35,11 @@ Sys.setenv(JAVA_HOME='C:/Program Files/Java/jre7')
 ```
 
 ##### Alternatively, clone the repository to your local directory using git and install from your local directory
+```r
+install.packages("C:/path to folder with the package", 
+repos = NULL, 
+type = "source")
+```
 
 #### 2.Load Package to the enviroment
 
@@ -47,7 +52,7 @@ library(msudatapull)
 ##### The function will call another function to prompt the password window
 
 ``` r
-drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","S:/Utilities/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar")
+drv <- RJDBC::JDBC("com.microsoft.sqlserver.jdbc.SQLServerDriver","O:/Apps/Microsoft SQL Server/Microsoft JDBC Driver 4.0 for SQL Server/sqljdbc_4.0/enu/sqljdbc4.jar")
 msudatacon(userid = "chendi4")
 ```
 
